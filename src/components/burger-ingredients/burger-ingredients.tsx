@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Tab, CurrencyIcon, Counter } from '@ya.praktikum/react-developer-burger-ui-components';
-import burgerIngredientsStyles from './burger-ingredients.module.css';
+import styles from './burger-ingredients.module.css';
 import { IIngredient } from '../../utils/data';
 import PropTypes from 'prop-types';
 
 interface BurgerIngredientsProps {
   ingredients: IIngredient[];
+  onIngredientClick: (ingredient: IIngredient) => void;
 }
 
-export const BurgerIngredients: React.FC<BurgerIngredientsProps> = ({ ingredients }) => {
+export const BurgerIngredients: React.FC<BurgerIngredientsProps> = ({ ingredients, onIngredientClick }) => {
   const [current, setCurrent] = useState('bun');
 
   const buns = ingredients.filter(item => item.type === 'bun');
@@ -16,22 +17,22 @@ export const BurgerIngredients: React.FC<BurgerIngredientsProps> = ({ ingredient
   const mains = ingredients.filter(item => item.type === 'main');
 
   const renderIngredient = (item: IIngredient) => (
-    <article key={item._id} className={burgerIngredientsStyles.card}>
+    <article key={item._id} className={styles.card} onClick={() => onIngredientClick(item)}>
       <Counter count={1} size="default" />
-      <img src={item.image} alt={item.name} className={burgerIngredientsStyles.image} />
-      <div className={burgerIngredientsStyles.price}>
+      <img src={item.image} alt={item.name} className={styles.image} />
+      <div className={styles.price}>
         <span className="text text_type_digits-default">{item.price}</span>
         <CurrencyIcon type="primary" />
       </div>
-      <p className={`${burgerIngredientsStyles.name} text text_type_main-default`}>{item.name}</p>
+      <p className={`${styles.name} text text_type_main-default`}>{item.name}</p>
     </article>
   );
 
   return (
-    <section className={burgerIngredientsStyles.section}>
+    <section className={styles.section}>
       <h1 className="text text_type_main-large mb-5">Соберите бургер</h1>
       
-      <div className={burgerIngredientsStyles.tabs}>
+      <div className={styles.tabs}>
         <Tab value="bun" active={current === 'bun'} onClick={setCurrent}>
           Булки
         </Tab>
@@ -43,24 +44,24 @@ export const BurgerIngredients: React.FC<BurgerIngredientsProps> = ({ ingredient
         </Tab>
       </div>
 
-      <div className={burgerIngredientsStyles.ingredients}>
-        <div className={burgerIngredientsStyles.category}>
+      <div className={styles.ingredients}>
+        <div className={styles.category}>
           <h2 className="text text_type_main-medium">Булки</h2>
-          <div className={burgerIngredientsStyles.items}>
+          <div className={styles.items}>
             {buns.map(renderIngredient)}
           </div>
         </div>
 
-        <div className={burgerIngredientsStyles.category}>
+        <div className={styles.category}>
           <h2 className="text text_type_main-medium">Соусы</h2>
-          <div className={burgerIngredientsStyles.items}>
+          <div className={styles.items}>
             {sauces.map(renderIngredient)}
           </div>
         </div>
 
-        <div className={burgerIngredientsStyles.category}>
+        <div className={styles.category}>
           <h2 className="text text_type_main-medium">Начинки</h2>
-          <div className={burgerIngredientsStyles.items}>
+          <div className={styles.items}>
             {mains.map(renderIngredient)}
           </div>
         </div>
@@ -69,7 +70,6 @@ export const BurgerIngredients: React.FC<BurgerIngredientsProps> = ({ ingredient
   );
 };
 
-// eslint-disable-next-line react/no-typos
 BurgerIngredients.propTypes = {
   ingredients: PropTypes.arrayOf(
     PropTypes.shape({
@@ -86,5 +86,6 @@ BurgerIngredients.propTypes = {
       image_large: PropTypes.string.isRequired,
       __v: PropTypes.number.isRequired
     })
-  ).isRequired
+  ).isRequired,
+  onIngredientClick: PropTypes.func.isRequired
 } as any;

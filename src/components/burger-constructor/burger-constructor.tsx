@@ -6,9 +6,10 @@ import PropTypes from 'prop-types';
 
 interface BurgerConstructorProps {
   ingredients: IIngredient[];
+  onOrderClick: () => void;
 }
 
-export const BurgerConstructor: React.FC<BurgerConstructorProps> = ({ ingredients }) => {
+export const BurgerConstructor: React.FC<BurgerConstructorProps> = ({ ingredients, onOrderClick }) => {
   const bun = ingredients.find(item => item.type === 'bun');
   const fillings = ingredients.filter(item => item.type !== 'bun');
 
@@ -62,7 +63,7 @@ export const BurgerConstructor: React.FC<BurgerConstructorProps> = ({ ingredient
           <span className="text text_type_digits-medium">{totalPrice}</span>
           <CurrencyIcon type="primary" />
         </div>
-        <Button htmlType="button" type="primary" size="large">
+        <Button htmlType="button" type="primary" size="large" onClick={onOrderClick}>
           Оформить заказ
         </Button>
       </div>
@@ -86,5 +87,6 @@ BurgerConstructor.propTypes = {
       image_large: PropTypes.string.isRequired,
       __v: PropTypes.number.isRequired
     })
-  ).isRequired
+  ).isRequired,
+  onOrderClick: PropTypes.func.isRequired
 } as any;
