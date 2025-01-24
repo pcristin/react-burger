@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './ingredient-details.module.css';
 import { IIngredient } from '../../utils/data';
-import PropTypes from 'prop-types';
+import { IngredientType } from '../../utils/types';
 
 interface IngredientDetailsProps {
   ingredient: IIngredient;
@@ -35,18 +35,5 @@ export const IngredientDetails: React.FC<IngredientDetailsProps> = ({ ingredient
 };
 
 IngredientDetails.propTypes = {
-  ingredient: PropTypes.shape({
-    _id: PropTypes.string.isRequired,
-    name: PropTypes.string.isRequired,
-    type: PropTypes.oneOf(['bun', 'main', 'sauce']).isRequired,
-    proteins: PropTypes.number.isRequired,
-    fat: PropTypes.number.isRequired,
-    carbohydrates: PropTypes.number.isRequired,
-    calories: PropTypes.number.isRequired,
-    price: PropTypes.number.isRequired,
-    image: PropTypes.string.isRequired,
-    image_mobile: PropTypes.string.isRequired,
-    image_large: PropTypes.string.isRequired,
-    __v: PropTypes.number.isRequired
-  }).isRequired
+  ingredient: IngredientType.isRequired
 } as any; 
