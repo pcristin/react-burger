@@ -1,90 +1,131 @@
-import React, { useState } from 'react';
-import { Tab, CurrencyIcon, Counter } from '@ya.praktikum/react-developer-burger-ui-components';
-import burgerIngredientsStyles from './burger-ingredients.module.css';
-import { IIngredient } from '../../utils/data';
-import PropTypes from 'prop-types';
+import React, { useEffect, useRef, useState } from 'react';
+import { useAppSelector, useAppDispatch } from '../../services/hooks';
+import { fetchIngredients } from '../../services/ingredientsSlice';
+import { IngredientCard } from '../ingredient-card/ingredient-card';
+import styles from './burger-ingredients.module.css';
 
-interface BurgerIngredientsProps {
-  ingredients: IIngredient[];
-}
+type TTabValue = 'bun' | 'sauce' | 'main';
 
-export const BurgerIngredients: React.FC<BurgerIngredientsProps> = ({ ingredients }) => {
-  const [current, setCurrent] = useState('bun');
+export const BurgerIngredients: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const { items, loading, error } = useAppSelector(state => state.ingredients);
+  const [currentTab, setCurrentTab] = useState<TTabValue>('bun');
 
-  const buns = ingredients.filter(item => item.type === 'bun');
-  const sauces = ingredients.filter(item => item.type === 'sauce');
-  const mains = ingredients.filter(item => item.type === 'main');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const bunRef = useRef<HTMLDivElement>(null);
+  const sauceRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
 
-  const renderIngredient = (item: IIngredient) => (
-    <article key={item._id} className={burgerIngredientsStyles.card}>
-      <Counter count={1} size="default" />
-      <img src={item.image} alt={item.name} className={burgerIngredientsStyles.image} />
-      <div className={burgerIngredientsStyles.price}>
-        <span className="text text_type_digits-default">{item.price}</span>
-        <CurrencyIcon type="primary" />
-      </div>
-      <p className={`${burgerIngredientsStyles.name} text text_type_main-default`}>{item.name}</p>
-    </article>
-  );
+  useEffect(() => {
+    dispatch(fetchIngredients());
+  }, [dispatch]);
+
+  const handleTabClick = (tab: TTabValue) => {
+    setCurrentTab(tab);
+    const refs = {
+      bun: bunRef,
+      sauce: sauceRef,
+      main: mainRef
+    };
+    
+    refs[tab].current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    const options = {
+      root: containerRef.current,
+      rootMargin: '0px',
+      threshold: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    };
+
+    const callback: IntersectionObserverCallback = (entries) => {
+      const visibleSections = entries
+        .filter(entry => entry.isIntersecting)
+        .map(entry => ({
+          id: entry.target.id,
+          ratio: entry.intersectionRatio
+        }))
+        .sort((a, b) => b.ratio - a.ratio);
+
+      if (visibleSections.length > 0) {
+        setCurrentTab(visibleSections[0].id as TTabValue);
+      }
+    };
+
+    const observer = new IntersectionObserver(callback, options);
+
+    if (bunRef.current) observer.observe(bunRef.current);
+    if (sauceRef.current) observer.observe(sauceRef.current);
+    if (mainRef.current) observer.observe(mainRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  if (loading) {
+    return <div>Загрузка...</div>;
+  }
+
+  if (error) {
+    return <div>Ошибка: {error}</div>;
+  }
+
+  const buns = items.filter(item => item.type === 'bun');
+  const sauces = items.filter(item => item.type === 'sauce');
+  const mains = items.filter(item => item.type === 'main');
 
   return (
-    <section className={burgerIngredientsStyles.section}>
-      <h1 className="text text_type_main-large mb-5">Соберите бургер</h1>
-      
-      <div className={burgerIngredientsStyles.tabs}>
-        <Tab value="bun" active={current === 'bun'} onClick={setCurrent}>
+    <div className={styles.container}>
+      <div className={styles.tabs}>
+        <button
+          className={`${styles.tab} ${currentTab === 'bun' ? styles.active : ''}`}
+          onClick={() => handleTabClick('bun')}
+        >
           Булки
-        </Tab>
-        <Tab value="sauce" active={current === 'sauce'} onClick={setCurrent}>
+        </button>
+        <button
+          className={`${styles.tab} ${currentTab === 'sauce' ? styles.active : ''}`}
+          onClick={() => handleTabClick('sauce')}
+        >
           Соусы
-        </Tab>
-        <Tab value="main" active={current === 'main'} onClick={setCurrent}>
+        </button>
+        <button
+          className={`${styles.tab} ${currentTab === 'main' ? styles.active : ''}`}
+          onClick={() => handleTabClick('main')}
+        >
           Начинки
-        </Tab>
+        </button>
       </div>
 
-      <div className={burgerIngredientsStyles.ingredients}>
-        <div className={burgerIngredientsStyles.category}>
-          <h2 className="text text_type_main-medium">Булки</h2>
-          <div className={burgerIngredientsStyles.items}>
-            {buns.map(renderIngredient)}
+      <div className={styles.ingredients} ref={containerRef}>
+        <div id="bun" ref={bunRef}>
+          <h2>Булки</h2>
+          <div className={styles.group}>
+            {buns.map(item => (
+              <IngredientCard key={item._id} ingredient={item} />
+            ))}
           </div>
         </div>
 
-        <div className={burgerIngredientsStyles.category}>
-          <h2 className="text text_type_main-medium">Соусы</h2>
-          <div className={burgerIngredientsStyles.items}>
-            {sauces.map(renderIngredient)}
+        <div id="sauce" ref={sauceRef}>
+          <h2>Соусы</h2>
+          <div className={styles.group}>
+            {sauces.map(item => (
+              <IngredientCard key={item._id} ingredient={item} />
+            ))}
           </div>
         </div>
 
-        <div className={burgerIngredientsStyles.category}>
-          <h2 className="text text_type_main-medium">Начинки</h2>
-          <div className={burgerIngredientsStyles.items}>
-            {mains.map(renderIngredient)}
+        <div id="main" ref={mainRef}>
+          <h2>Начинки</h2>
+          <div className={styles.group}>
+            {mains.map(item => (
+              <IngredientCard key={item._id} ingredient={item} />
+            ))}
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 };
-
-// eslint-disable-next-line react/no-typos
-BurgerIngredients.propTypes = {
-  ingredients: PropTypes.arrayOf(
-    PropTypes.shape({
-      _id: PropTypes.string.isRequired,
-      name: PropTypes.string.isRequired,
-      type: PropTypes.oneOf(['bun', 'main', 'sauce']).isRequired,
-      proteins: PropTypes.number.isRequired,
-      fat: PropTypes.number.isRequired,
-      carbohydrates: PropTypes.number.isRequired,
-      calories: PropTypes.number.isRequired,
-      price: PropTypes.number.isRequired,
-      image: PropTypes.string.isRequired,
-      image_mobile: PropTypes.string.isRequired,
-      image_large: PropTypes.string.isRequired,
-      __v: PropTypes.number.isRequired
-    })
-  ).isRequired
-} as any;

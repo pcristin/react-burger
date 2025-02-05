@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { useAppSelector } from './services/hooks';
-import styles from './App.module.css';
-import { AppHeader } from './components/app-header/app-header';
-import { BurgerIngredients } from './components/burger-ingredients/burger-ingredients';
-import { BurgerConstructor } from './components/burger-constructor/burger-constructor';
-import { Modal } from './components/modal/modal';
-import { OrderDetails } from './components/order-details/order-details';
+import { useAppSelector } from '../../services/hooks';
+import { Modal } from '../modal/modal';
+import { OrderDetails } from '../order-details/order-details';
+import { BurgerIngredients }  from '../burger-ingredients/burger-ingredients';
+import { BurgerConstructor } from '../burger-constructor/burger-constructor';
+import { AppHeader } from '../app-header/app-header';
+import styles from './app.module.css';
 
-function App() {
+export const App: React.FC = () => {
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const { order } = useAppSelector(state => state.order);
 
+  // Открываем модальное окно, когда получаем номер заказа
   React.useEffect(() => {
     if (order) {
       setIsOrderModalOpen(true);
@@ -36,6 +37,4 @@ function App() {
       )}
     </div>
   );
-}
-
-export default App; 
+}; 

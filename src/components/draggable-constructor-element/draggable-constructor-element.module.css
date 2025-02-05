@@ -1,0 +1,31 @@
+.element {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: grab;
+  transition: all 0.2s ease;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.element:hover {
+  background-color: #1C1C21;
+}
+
+.dragIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  cursor: grab;
+}
+
+.dragIcon:hover {
+  opacity: 0.8;
+}
+
+.element:active,
+.dragIcon:active {
+  cursor: grabbing;
+} 
