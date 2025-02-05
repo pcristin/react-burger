@@ -19,7 +19,7 @@ import styles from './burger-constructor.module.css';
 export const BurgerConstructor: React.FC = () => {
   const dispatch = useAppDispatch();
   const { bun, ingredients = [] } = useAppSelector(state => state.constructor);
-  const { order, loading } = useAppSelector(state => state.order);
+  const { loading } = useAppSelector(state => state.order);
 
   const [{ isHover }, dropTarget] = useDrop({
     accept: 'ingredient',
