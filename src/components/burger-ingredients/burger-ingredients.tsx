@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useAppSelector, useAppDispatch } from '../../services/hooks';
 import { fetchIngredients } from '../../services/ingredientsSlice';
-import { IngredientCard } from '../ingredient-card/ingredient-card';
+import { Tab } from '@ya.praktikum/react-developer-burger-ui-components';
+import { IngredientGroup } from '../ingredient-group/ingredient-group';
 import styles from './burger-ingredients.module.css';
 
 type TTabValue = 'bun' | 'sauce' | 'main';
@@ -15,53 +16,63 @@ export const BurgerIngredients: React.FC = () => {
   const bunRef = useRef<HTMLDivElement>(null);
   const sauceRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLDivElement>(null);
+  const bunHeaderRef = useRef<HTMLHeadingElement>(null);
+  const sauceHeaderRef = useRef<HTMLHeadingElement>(null);
+  const mainHeaderRef = useRef<HTMLHeadingElement>(null);
+
+  const buns = useMemo(() => items.filter(item => item.type === 'bun'), [items]);
+  const sauces = useMemo(() => items.filter(item => item.type === 'sauce'), [items]);
+  const mains = useMemo(() => items.filter(item => item.type === 'main'), [items]);
 
   useEffect(() => {
     dispatch(fetchIngredients());
   }, [dispatch]);
 
-  const handleTabClick = (tab: TTabValue) => {
-    setCurrentTab(tab);
-    const refs = {
-      bun: bunRef,
-      sauce: sauceRef,
-      main: mainRef
-    };
+  const handleScroll = useCallback(() => {
+    const container = containerRef.current;
+    if (!container || !bunHeaderRef.current || !sauceHeaderRef.current || !mainHeaderRef.current) return;
     
-    refs[tab].current?.scrollIntoView({ behavior: 'smooth' });
-  };
+    const scrollTop = container.scrollTop;
+    
+    const bunDistance = Math.abs(bunHeaderRef.current.offsetTop - scrollTop);
+    const sauceDistance = Math.abs(sauceHeaderRef.current.offsetTop - scrollTop);
+    const mainDistance = Math.abs(mainHeaderRef.current.offsetTop - scrollTop);
+
+    let newTab: TTabValue;
+    if (bunDistance <= sauceDistance && bunDistance <= mainDistance) {
+      newTab = 'bun';
+    } else if (sauceDistance <= mainDistance) {
+      newTab = 'sauce';
+    } else {
+      newTab = 'main';
+    }
+    
+    if (newTab !== currentTab) {
+      setCurrentTab(newTab);
+    }
+  }, [currentTab]);
 
   useEffect(() => {
-    const options = {
-      root: containerRef.current,
-      rootMargin: '0px',
-      threshold: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-    };
-
-    const callback: IntersectionObserverCallback = (entries) => {
-      const visibleSections = entries
-        .filter(entry => entry.isIntersecting)
-        .map(entry => ({
-          id: entry.target.id,
-          ratio: entry.intersectionRatio
-        }))
-        .sort((a, b) => b.ratio - a.ratio);
-
-      if (visibleSections.length > 0) {
-        setCurrentTab(visibleSections[0].id as TTabValue);
-      }
-    };
-
-    const observer = new IntersectionObserver(callback, options);
-
-    if (bunRef.current) observer.observe(bunRef.current);
-    if (sauceRef.current) observer.observe(sauceRef.current);
-    if (mainRef.current) observer.observe(mainRef.current);
+    const container = containerRef.current;
+    if (!container) return;
+    
+    container.addEventListener('scroll', handleScroll);
+    handleScroll();
 
     return () => {
-      observer.disconnect();
+      container.removeEventListener('scroll', handleScroll);
     };
-  }, []);
+  }, [handleScroll]);
+
+  const handleTabClick = (value: string) => {
+    setCurrentTab(value as TTabValue);
+    const sectionRefs: Record<TTabValue, React.RefObject<HTMLDivElement>> = {
+      bun: bunRef,
+      sauce: sauceRef,
+      main: mainRef,
+    };
+    sectionRefs[value as TTabValue].current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   if (loading) {
     return <div>Загрузка...</div>;
@@ -71,60 +82,46 @@ export const BurgerIngredients: React.FC = () => {
     return <div>Ошибка: {error}</div>;
   }
 
-  const buns = items.filter(item => item.type === 'bun');
-  const sauces = items.filter(item => item.type === 'sauce');
-  const mains = items.filter(item => item.type === 'main');
-
   return (
     <div className={styles.container}>
       <div className={styles.tabs}>
-        <button
-          className={`${styles.tab} ${currentTab === 'bun' ? styles.active : ''}`}
-          onClick={() => handleTabClick('bun')}
-        >
+        <Tab value="bun" active={currentTab === 'bun'} onClick={handleTabClick}>
           Булки
-        </button>
-        <button
-          className={`${styles.tab} ${currentTab === 'sauce' ? styles.active : ''}`}
-          onClick={() => handleTabClick('sauce')}
-        >
+        </Tab>
+        <Tab value="sauce" active={currentTab === 'sauce'} onClick={handleTabClick}>
           Соусы
-        </button>
-        <button
-          className={`${styles.tab} ${currentTab === 'main' ? styles.active : ''}`}
-          onClick={() => handleTabClick('main')}
-        >
+        </Tab>
+        <Tab value="main" active={currentTab === 'main'} onClick={handleTabClick}>
           Начинки
-        </button>
+        </Tab>
       </div>
 
-      <div className={styles.ingredients} ref={containerRef}>
-        <div id="bun" ref={bunRef}>
-          <h2>Булки</h2>
-          <div className={styles.group}>
-            {buns.map(item => (
-              <IngredientCard key={item._id} ingredient={item} />
-            ))}
-          </div>
-        </div>
-
-        <div id="sauce" ref={sauceRef}>
-          <h2>Соусы</h2>
-          <div className={styles.group}>
-            {sauces.map(item => (
-              <IngredientCard key={item._id} ingredient={item} />
-            ))}
-          </div>
-        </div>
-
-        <div id="main" ref={mainRef}>
-          <h2>Начинки</h2>
-          <div className={styles.group}>
-            {mains.map(item => (
-              <IngredientCard key={item._id} ingredient={item} />
-            ))}
-          </div>
-        </div>
+      <div
+        className={styles.ingredients}
+        ref={containerRef}
+        style={{ overflowY: 'auto', height: '500px' }}
+      >
+        <IngredientGroup
+          ingredients={buns}
+          type="bun"
+          groupRef={bunRef}
+          headerRef={bunHeaderRef}
+          title="Булки"
+        />
+        <IngredientGroup
+          ingredients={sauces}
+          type="sauce"
+          groupRef={sauceRef}
+          headerRef={sauceHeaderRef}
+          title="Соусы"
+        />
+        <IngredientGroup
+          ingredients={mains}
+          type="main"
+          groupRef={mainRef}
+          headerRef={mainHeaderRef}
+          title="Начинки"
+        />
       </div>
     </div>
   );

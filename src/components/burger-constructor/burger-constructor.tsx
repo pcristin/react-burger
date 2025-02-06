@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { useDrop } from 'react-dnd';
 import { 
   ConstructorElement,
@@ -9,7 +9,8 @@ import { useAppDispatch, useAppSelector } from '../../services/hooks';
 import { 
   addIngredient,
   removeIngredient,
-  moveIngredient
+  moveIngredient,
+  resetConstructor
 } from '../../services/constructorSlice';
 import { submitOrder } from '../../services/orderSlice';
 import { TIngredient } from '../../utils/types';
@@ -19,7 +20,13 @@ import styles from './burger-constructor.module.css';
 export const BurgerConstructor: React.FC = () => {
   const dispatch = useAppDispatch();
   const { bun, ingredients = [] } = useAppSelector(state => state.constructor);
-  const { loading } = useAppSelector(state => state.order);
+  const { order, loading } = useAppSelector(state => state.order);
+
+  useEffect(() => {
+    if (order) {
+      dispatch(resetConstructor());
+    }
+  }, [order, dispatch]);
 
   const [{ isHover }, dropTarget] = useDrop({
     accept: 'ingredient',
@@ -31,13 +38,13 @@ export const BurgerConstructor: React.FC = () => {
     })
   });
 
-  const handleRemove = useCallback((uniqueId: string) => {
+  const handleRemove = (uniqueId: string) => {
     dispatch(removeIngredient(uniqueId));
-  }, [dispatch]);
+  };
 
-  const handleMove = useCallback((dragIndex: number, hoverIndex: number) => {
+  const handleMove = (dragIndex: number, hoverIndex: number) => {
     dispatch(moveIngredient({ dragIndex, hoverIndex }));
-  }, [dispatch]);
+  };
 
   const totalPrice = useMemo(() => {
     const bunPrice = bun ? bun.price * 2 : 0;
