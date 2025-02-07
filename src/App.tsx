@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAppSelector } from './services/hooks';
 import styles from './App.module.css';
@@ -20,7 +21,6 @@ function App() {
   const handleCloseOrderModal = () => {
     setIsOrderModalOpen(false);
   };
-
   return (
     <div className={styles.app}>
       <AppHeader />
@@ -31,6 +31,7 @@ function App() {
 
       {isOrderModalOpen && (
         <Modal onClose={handleCloseOrderModal}>
+
           <OrderDetails />
         </Modal>
       )}

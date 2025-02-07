@@ -41,4 +41,4 @@ export type TOrderState = {
   order: TOrder | null;
   loading: boolean;
   error: string | null;
-}; 
+};
