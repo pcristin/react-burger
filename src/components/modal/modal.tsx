@@ -1,20 +1,21 @@
 import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { CloseIcon } from '@ya.praktikum/react-developer-burger-ui-components';
+import { ModalOverlay } from './modal-overlay.tsx';
 import styles from './modal.module.css';
-import { ModalOverlay } from './modal-overlay';
-import PropTypes from 'prop-types';
 
-interface ModalProps {
+const modalRoot = document.getElementById('modal-root') as HTMLElement;
+
+type TModalProps = {
+  children: React.ReactNode;
   title?: string;
   onClose: () => void;
-  children: React.ReactNode;
-}
+};
 
-export const Modal: React.FC<ModalProps> = ({ title, onClose, children }) => {
+export const Modal: React.FC<TModalProps> = ({ children, title, onClose }) => {
   useEffect(() => {
-    const handleEscClose = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+    const handleEscClose = (evt: KeyboardEvent) => {
+      if (evt.key === 'Escape') {
         onClose();
       }
     };
@@ -25,13 +26,8 @@ export const Modal: React.FC<ModalProps> = ({ title, onClose, children }) => {
     };
   }, [onClose]);
 
-  const modalRoot = document.getElementById('modals');
-
-  if (!modalRoot) return null;
-
   return ReactDOM.createPortal(
     <>
-      <ModalOverlay onClose={onClose} />
       <div className={styles.modal}>
         <div className={styles.header}>
           {title && <h2 className="text text_type_main-large">{title}</h2>}
@@ -39,17 +35,10 @@ export const Modal: React.FC<ModalProps> = ({ title, onClose, children }) => {
             <CloseIcon type="primary" />
           </button>
         </div>
-        <div className={styles.content}>
-          {children}
-        </div>
+        {children}
       </div>
+      <ModalOverlay onClose={onClose} />
     </>,
     modalRoot
   );
-};
-
-Modal.propTypes = {
-  title: PropTypes.string,
-  onClose: PropTypes.func.isRequired,
-  children: PropTypes.node.isRequired
-} as any; 
+}; 

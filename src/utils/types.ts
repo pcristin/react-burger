@@ -1,16 +1,44 @@
-import PropTypes from 'prop-types';
+export type TIngredient = {
+  _id: string;
+  name: string;
+  type: 'bun' | 'sauce' | 'main';
+  proteins: number;
+  fat: number;
+  carbohydrates: number;
+  calories: number;
+  price: number;
+  image: string;
+  image_mobile: string;
+  image_large: string;
+  __v: number;
+};
 
-export const IngredientType = PropTypes.shape({
-  _id: PropTypes.string.isRequired,
-  name: PropTypes.string.isRequired,
-  type: PropTypes.oneOf(['bun', 'main', 'sauce']).isRequired,
-  proteins: PropTypes.number.isRequired,
-  fat: PropTypes.number.isRequired,
-  carbohydrates: PropTypes.number.isRequired,
-  calories: PropTypes.number.isRequired,
-  price: PropTypes.number.isRequired,
-  image: PropTypes.string.isRequired,
-  image_mobile: PropTypes.string.isRequired,
-  image_large: PropTypes.string.isRequired,
-  __v: PropTypes.number.isRequired
-}); 
+export type TConstructorIngredient = TIngredient & {
+  uniqueId: string;
+};
+
+export type TOrder = {
+  number: number;
+  name: string;
+};
+
+export type TIngredientsState = {
+  items: TIngredient[];
+  loading: boolean;
+  error: string | null;
+};
+
+export type TConstructorState = {
+  bun: TIngredient | null;
+  ingredients: TConstructorIngredient[];
+};
+
+export type TCurrentIngredientState = {
+  ingredient: TIngredient | null;
+};
+
+export type TOrderState = {
+  order: TOrder | null;
+  loading: boolean;
+  error: string | null;
+};

@@ -1,0 +1,32 @@
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  cursor: pointer;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  transform: scale(1.03);
+}
+
+.image {
+  width: 240px;
+  height: 120px;
+  object-fit: contain;
+}
+
+.price {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.name {
+  min-height: 48px;
+  margin: 0;
+} 

@@ -1,77 +1,129 @@
-import React, { useState } from 'react';
-import { Tab, CurrencyIcon, Counter } from '@ya.praktikum/react-developer-burger-ui-components';
+
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useAppSelector, useAppDispatch } from '../../services/hooks';
+import { fetchIngredients } from '../../services/ingredientsSlice';
+import { Tab } from '@ya.praktikum/react-developer-burger-ui-components';
+import { IngredientGroup } from '../ingredient-group/ingredient-group';
 import styles from './burger-ingredients.module.css';
-import { IIngredient } from '../../utils/data';
-import PropTypes from 'prop-types';
-import { IngredientType } from '../../utils/types';
 
-interface BurgerIngredientsProps {
-  ingredients: IIngredient[];
-  onIngredientClick: (ingredient: IIngredient) => void;
-}
+type TTabValue = 'bun' | 'sauce' | 'main';
 
-export const BurgerIngredients: React.FC<BurgerIngredientsProps> = ({ ingredients, onIngredientClick }) => {
-  const [current, setCurrent] = useState('bun');
+export const BurgerIngredients: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const { items, loading, error } = useAppSelector(state => state.ingredients);
+  const [currentTab, setCurrentTab] = useState<TTabValue>('bun');
 
-  const buns = ingredients.filter(item => item.type === 'bun');
-  const sauces = ingredients.filter(item => item.type === 'sauce');
-  const mains = ingredients.filter(item => item.type === 'main');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const bunRef = useRef<HTMLDivElement>(null);
+  const sauceRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLDivElement>(null);
+  const bunHeaderRef = useRef<HTMLHeadingElement>(null);
+  const sauceHeaderRef = useRef<HTMLHeadingElement>(null);
+  const mainHeaderRef = useRef<HTMLHeadingElement>(null);
 
-  const renderIngredient = (item: IIngredient) => (
-    <article key={item._id} className={styles.card} onClick={() => onIngredientClick(item)}>
-      <Counter count={1} size="default" />
-      <img src={item.image} alt={item.name} className={styles.image} />
-      <div className={styles.price}>
-        <span className="text text_type_digits-default">{item.price}</span>
-        <CurrencyIcon type="primary" />
-      </div>
-      <p className={`${styles.name} text text_type_main-default`}>{item.name}</p>
-    </article>
-  );
+  const buns = useMemo(() => items.filter(item => item.type === 'bun'), [items]);
+  const sauces = useMemo(() => items.filter(item => item.type === 'sauce'), [items]);
+  const mains = useMemo(() => items.filter(item => item.type === 'main'), [items]);
+
+  useEffect(() => {
+    dispatch(fetchIngredients());
+  }, [dispatch]);
+
+  const handleScroll = useCallback(() => {
+    const container = containerRef.current;
+    if (!container || !bunHeaderRef.current || !sauceHeaderRef.current || !mainHeaderRef.current) return;
+    
+    const scrollTop = container.scrollTop;
+    
+    const bunDistance = Math.abs(bunHeaderRef.current.offsetTop - scrollTop);
+    const sauceDistance = Math.abs(sauceHeaderRef.current.offsetTop - scrollTop);
+    const mainDistance = Math.abs(mainHeaderRef.current.offsetTop - scrollTop);
+
+    let newTab: TTabValue;
+    if (bunDistance <= sauceDistance && bunDistance <= mainDistance) {
+      newTab = 'bun';
+    } else if (sauceDistance <= mainDistance) {
+      newTab = 'sauce';
+    } else {
+      newTab = 'main';
+    }
+    
+    if (newTab !== currentTab) {
+      setCurrentTab(newTab);
+    }
+  }, [currentTab]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    
+    container.addEventListener('scroll', handleScroll);
+    handleScroll();
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+    };
+  }, [handleScroll]);
+
+  const handleTabClick = (value: string) => {
+    setCurrentTab(value as TTabValue);
+    const sectionRefs: Record<TTabValue, React.RefObject<HTMLDivElement>> = {
+      bun: bunRef,
+      sauce: sauceRef,
+      main: mainRef,
+    };
+    sectionRefs[value as TTabValue].current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  if (loading) {
+    return <div>Загрузка...</div>;
+  }
+
+  if (error) {
+    return <div>Ошибка: {error}</div>;
+  }
 
   return (
-    <section className={styles.section}>
-      <h1 className="text text_type_main-large mb-5">Соберите бургер</h1>
-      
+    <div className={styles.container}>
       <div className={styles.tabs}>
-        <Tab value="bun" active={current === 'bun'} onClick={setCurrent}>
+        <Tab value="bun" active={currentTab === 'bun'} onClick={handleTabClick}>
           Булки
         </Tab>
-        <Tab value="sauce" active={current === 'sauce'} onClick={setCurrent}>
+        <Tab value="sauce" active={currentTab === 'sauce'} onClick={handleTabClick}>
           Соусы
         </Tab>
-        <Tab value="main" active={current === 'main'} onClick={setCurrent}>
+        <Tab value="main" active={currentTab === 'main'} onClick={handleTabClick}>
           Начинки
         </Tab>
       </div>
 
-      <div className={styles.ingredients}>
-        <div className={styles.category}>
-          <h2 className="text text_type_main-medium">Булки</h2>
-          <div className={styles.items}>
-            {buns.map(renderIngredient)}
-          </div>
-        </div>
-
-        <div className={styles.category}>
-          <h2 className="text text_type_main-medium">Соусы</h2>
-          <div className={styles.items}>
-            {sauces.map(renderIngredient)}
-          </div>
-        </div>
-
-        <div className={styles.category}>
-          <h2 className="text text_type_main-medium">Начинки</h2>
-          <div className={styles.items}>
-            {mains.map(renderIngredient)}
-          </div>
-        </div>
+      <div
+        className={styles.ingredients}
+        ref={containerRef}
+        style={{ overflowY: 'auto', height: '500px' }}
+      >
+        <IngredientGroup
+          ingredients={buns}
+          type="bun"
+          groupRef={bunRef}
+          headerRef={bunHeaderRef}
+          title="Булки"
+        />
+        <IngredientGroup
+          ingredients={sauces}
+          type="sauce"
+          groupRef={sauceRef}
+          headerRef={sauceHeaderRef}
+          title="Соусы"
+        />
+        <IngredientGroup
+          ingredients={mains}
+          type="main"
+          groupRef={mainRef}
+          headerRef={mainHeaderRef}
+          title="Начинки"
+        />
       </div>
-    </section>
+    </div>
   );
 };
-
-BurgerIngredients.propTypes = {
-  ingredients: PropTypes.arrayOf(IngredientType).isRequired,
-  onIngredientClick: PropTypes.func.isRequired
-} as any;
