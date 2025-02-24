@@ -6,10 +6,11 @@
   transition: all 0.2s ease;
   padding: 4px;
   border-radius: 8px;
+  background-color: transparent;
 }
 
 .element:hover {
-  background-color: #1C1C21;
+  background-color: #2F2F37;
 }
 
 .dragIcon {

@@ -1,0 +1,42 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 88px);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 480px;
+  margin-bottom: 80px;
+}
+
+.inputContainer {
+  width: 100%;
+}
+
+/* Скрываем сообщения об ошибке пароля */
+.inputContainer :global(.input_status_error) {
+  border-color: var(--colors-interface-accent) !important;
+}
+
+.links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.link {
+  color: #4C4CFF;
+  text-decoration: none;
+  transition: opacity 0.3s;
+}
+
+.link:hover {
+  opacity: 0.8;
+} 

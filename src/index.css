@@ -77,3 +77,11 @@ button:focus-visible {
 #root {
   min-height: 100vh;
 }
+
+.text_color_error {
+  color: #E52B1A;
+}
+
+.text_color_success {
+  color: #00CCCC;
+}

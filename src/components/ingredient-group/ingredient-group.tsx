@@ -20,9 +20,9 @@ export const IngredientGroup: React.FC<TIngredientGroupProps> = ({
   headerRef, 
   title 
 }) => (
-  <div id={type} ref={groupRef}>
-    <h2 ref={headerRef}>{title}</h2>
-    <div className={styles.group}>
+  <div id={type} ref={groupRef} className={styles.group}>
+    <h2 ref={headerRef} className={styles.groupTitle}>{title}</h2>
+    <div className={styles.groupContent}>
       {ingredients.map(item => (
         <IngredientCard key={item._id} ingredient={item} />
       ))}
