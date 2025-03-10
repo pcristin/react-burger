@@ -29,4 +29,10 @@
 .name {
   min-height: 48px;
   margin: 0;
+}
+
+.link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
 } 

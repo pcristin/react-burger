@@ -2,17 +2,20 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 16px;
-  max-width: 600px;
-  width: 100%;
+  padding: 0 16px 16px;
+  width: 600px;
+  height: auto;
+  max-height: 812px;
   min-height: 100px;
-  border-radius: 8px;
-  background-color: #1C1C21;
+  border-radius: 0;
+  background-color: transparent;
   transition: background-color 0.3s ease;
+  align-self: flex-start;
+  margin-top: 50px;
 }
 
 .hover {
-  background-color: #2F2F37;
+  background-color: rgba(47, 47, 55, 0.2);
 }
 
 .ingredients {
@@ -20,7 +23,7 @@
   flex-direction: column;
   gap: 16px;
   padding: 8px;
-  max-height: calc(100vh - 536px);
+  max-height: 550px;
   overflow-y: auto;
 }
 
@@ -41,6 +44,18 @@
   margin: 0 16px;
 }
 
+.bun > div {
+  background-color: #1C1C21;
+}
+
+.bun:first-child > div {
+  border-radius: 88px 88px 40px 40px;
+}
+
+.bun:last-of-type > div {
+  border-radius: 40px 40px 88px 88px;
+}
+
 .total {
   display: flex;
   align-items: center;
@@ -53,9 +68,22 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  font-size: 48px;
 }
 
 .price svg {
   width: 33px;
   height: 33px;
+}
+
+.dragIcon {
+  cursor: grab;
+  display: flex;
+  align-items: center;
+}
+
+.elementWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 } 

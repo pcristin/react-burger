@@ -30,35 +30,33 @@ export const BurgerIngredients: React.FC = () => {
   }, [dispatch]);
 
   const handleScroll = useCallback(() => {
-    const container = containerRef.current;
-    if (!container || !bunHeaderRef.current || !sauceHeaderRef.current || !mainHeaderRef.current) return;
+    if (!containerRef.current) return;
     
-    const scrollTop = container.scrollTop;
+    // Получаем позиции заголовков относительно верха контейнера
+    const bunHeaderTop = bunHeaderRef.current?.getBoundingClientRect().top || 0;
+    const sauceHeaderTop = sauceHeaderRef.current?.getBoundingClientRect().top || 0;
+    const mainHeaderTop = mainHeaderRef.current?.getBoundingClientRect().top || 0;
     
-    const bunDistance = Math.abs(bunHeaderRef.current.offsetTop - scrollTop);
-    const sauceDistance = Math.abs(sauceHeaderRef.current.offsetTop - scrollTop);
-    const mainDistance = Math.abs(mainHeaderRef.current.offsetTop - scrollTop);
-
-    let newTab: TTabValue;
-    if (bunDistance <= sauceDistance && bunDistance <= mainDistance) {
-      newTab = 'bun';
-    } else if (sauceDistance <= mainDistance) {
-      newTab = 'sauce';
-    } else {
-      newTab = 'main';
+    // Определяем, какой заголовок ближе всего к верху контейнера
+    const tabsHeight = 50; // Примерная высота табов
+    
+    if (bunHeaderTop <= tabsHeight + 100 && sauceHeaderTop > tabsHeight + 50) {
+      setCurrentTab('bun');
+    } else if (sauceHeaderTop <= tabsHeight + 100 && mainHeaderTop > tabsHeight + 50) {
+      setCurrentTab('sauce');
+    } else if (mainHeaderTop <= tabsHeight + 100) {
+      setCurrentTab('main');
     }
-    
-    if (newTab !== currentTab) {
-      setCurrentTab(newTab);
-    }
-  }, [currentTab]);
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     
     container.addEventListener('scroll', handleScroll);
-    handleScroll();
+    
+    // Вызываем handleScroll сразу после монтирования компонента
+    setTimeout(handleScroll, 100);
 
     return () => {
       container.removeEventListener('scroll', handleScroll);
@@ -85,6 +83,8 @@ export const BurgerIngredients: React.FC = () => {
 
   return (
     <div className={styles.container}>
+      <h1 className={`text text_type_main-large ${styles.title}`}>Соберите бургер</h1>
+      
       <div className={styles.tabs}>
         <Tab value="bun" active={currentTab === 'bun'} onClick={handleTabClick}>
           Булки
@@ -100,7 +100,7 @@ export const BurgerIngredients: React.FC = () => {
       <div
         className={styles.ingredients}
         ref={containerRef}
-        style={{ overflowY: 'auto', height: '500px' }}
+        onScroll={handleScroll}
       >
         <IngredientGroup
           ingredients={buns}

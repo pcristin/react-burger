@@ -1,4 +1,6 @@
 import React from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { useAppSelector } from '../../services/hooks';
 import {
   Logo,
   BurgerIcon,
@@ -8,32 +10,45 @@ import {
 import styles from './app-header.module.css';
 
 export const AppHeader: React.FC = () => {
+  const location = useLocation();
+  const { isAuthenticated } = useAppSelector(state => state.auth);
+
+  // Helper to determine if a path is active
+  const isActive = (path: string) => {
+    if (path === '/') {
+      return location.pathname === '/';
+    }
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <header className={styles.header}>
       <nav className={styles.nav}>
         <div className={styles.leftSection}>
-          <a href="#" className={styles.link}>
-            <BurgerIcon type="primary" />
-            <span className="text text_type_main-default">Конструктор</span>
-          </a>
-          <a href="#" className={styles.link}>
-            <ListIcon type="secondary" />
-            <span className="text text_type_main-default text_color_inactive">
+          <NavLink to="/" className={styles.link}>
+            <BurgerIcon type={isActive('/') ? "primary" : "secondary"} />
+            <span className={`text text_type_main-default ${!isActive('/') && 'text_color_inactive'}`}>
+              Конструктор
+            </span>
+          </NavLink>
+          <NavLink to="/feed" className={styles.link}>
+            <ListIcon type={isActive('/feed') ? "primary" : "secondary"} />
+            <span className={`text text_type_main-default ${!isActive('/feed') && 'text_color_inactive'}`}>
               Лента заказов
             </span>
-          </a>
+          </NavLink>
         </div>
         
         <div className={styles.logo}>
           <Logo />
         </div>
         
-        <a href="#" className={styles.link}>
-          <ProfileIcon type="secondary" />
-          <span className="text text_type_main-default text_color_inactive">
+        <NavLink to={isAuthenticated ? "/profile" : "/login"} className={styles.link}>
+          <ProfileIcon type={isActive('/profile') || isActive('/login') ? "primary" : "secondary"} />
+          <span className={`text text_type_main-default ${!(isActive('/profile') || isActive('/login')) && 'text_color_inactive'}`}>
             Личный кабинет
           </span>
-        </a>
+        </NavLink>
       </nav>
     </header>
   );

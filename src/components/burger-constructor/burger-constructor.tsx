@@ -1,5 +1,6 @@
 import React, { useMemo, useEffect } from 'react';
 import { useDrop } from 'react-dnd';
+import { useNavigate } from 'react-router-dom';
 import { 
   ConstructorElement,
   Button,
@@ -19,8 +20,10 @@ import styles from './burger-constructor.module.css';
 
 export const BurgerConstructor: React.FC = () => {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const { bun, ingredients = [] } = useAppSelector(state => state.constructor);
   const { order, loading } = useAppSelector(state => state.order);
+  const { isAuthenticated } = useAppSelector(state => state.auth);
 
   useEffect(() => {
     if (order) {
@@ -54,6 +57,12 @@ export const BurgerConstructor: React.FC = () => {
 
   const handleOrder = () => {
     if (!bun) return;
+    
+    // If user is not authenticated, redirect to login
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: { pathname: '/' } } });
+      return;
+    }
     
     const ingredientIds = [
       bun._id,

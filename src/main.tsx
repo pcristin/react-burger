@@ -4,7 +4,7 @@ import { Provider } from 'react-redux'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import { store } from './services/store'
-import { App } from './components/app/app'
+import App from './App'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

@@ -1,14 +1,25 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: 40px;
-  max-width: 600px;
-  width: 100%;
+  width: 600px;
+  height: auto;
+  max-height: 812px;
+}
+
+.title {
+  margin: 40px 0 20px;
+  padding: 0;
+  text-align: left;
 }
 
 .tabs {
   display: flex;
   width: 100%;
+  margin-bottom: 40px;
+  position: sticky;
+  top: 0;
+  background-color: #131316;
+  z-index: 2;
 }
 
 .tab {
@@ -31,10 +42,11 @@
 .ingredients {
   display: flex;
   flex-direction: column;
-  gap: 40px;
   overflow-y: auto;
-  max-height: calc(100vh - 300px);
+  height: auto;
+  max-height: 564px;
   padding-right: 8px;
+  margin-top: 0;
 }
 
 .ingredients::-webkit-scrollbar {
@@ -51,10 +63,25 @@
 }
 
 .group {
+  margin-bottom: 40px;
+}
+
+.group:first-child {
+  margin-top: 0;
+}
+
+.groupTitle {
+  margin: 0 0 24px;
+  padding: 0;
+  position: static;
+  background-color: transparent;
+}
+
+.groupContent {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 24px;
-  padding: 24px 16px;
+  padding: 0 16px;
 }
 
 .card {
@@ -65,6 +92,7 @@
   gap: 8px;
   text-align: center;
   cursor: pointer;
+  margin-bottom: 8px;
 }
 
 .card img {

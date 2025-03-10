@@ -1,0 +1,75 @@
+.container {
+  display: flex;
+  max-width: 1280px;
+  margin: 120px auto 0;
+  gap: 60px;
+}
+
+.sidebar {
+  width: 320px;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+.link {
+  text-decoration: none;
+  color: #8585AD;
+  transition: color 0.3s;
+}
+
+.activeLink {
+  text-decoration: none;
+  color: #F2F2F3;
+}
+
+.logoutButton {
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: #8585AD;
+  transition: color 0.3s;
+}
+
+.logoutButton:hover {
+  color: #F2F2F3;
+}
+
+.hint {
+  opacity: 0.4;
+  margin-top: 80px;
+  max-width: 320px;
+}
+
+.content {
+  flex-grow: 1;
+  max-width: 480px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.inputContainer {
+  position: relative;
+}
+
+/* Добавляем отступ для сообщений об успешном обновлении */
+.successMessage {
+  margin-top: 10px;
+  margin-bottom: 10px;
+} 
