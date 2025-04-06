@@ -5,6 +5,7 @@ import {
   Button 
 } from '@ya.praktikum/react-developer-burger-ui-components';
 import styles from './auth.module.css';
+import { BASE_URL, RESET_PASSWORD_ENDPOINT } from '../utils/constants';
 
 export const ResetPasswordPage: React.FC = () => {
   const [password, setPassword] = useState('');
@@ -47,7 +48,7 @@ export const ResetPasswordPage: React.FC = () => {
     setSuccessMessage(null);
     
     try {
-      const response = await fetch('https://norma.nomoreparties.space/api/password-reset/reset', {
+      const response = await fetch(`${BASE_URL}${RESET_PASSWORD_ENDPOINT}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

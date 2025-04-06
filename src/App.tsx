@@ -110,6 +110,9 @@ const ModalSwitch: React.FC = () => {
         <Route path="/profile/*" element={
           <ProtectedRoute element={<ProfilePage />} />
         } />
+        <Route path="/profile/orders/:number" element={
+          <ProtectedRoute element={<OrderPage />} />
+        } />
         <Route path="/ingredients/:id" element={<IngredientPage />} />
         <Route path="/feed" element={<FeedPage />} />
         <Route path="/feed/:number" element={<OrderPage />} />

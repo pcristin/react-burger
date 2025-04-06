@@ -1,5 +1,6 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { setCookie, getCookie, deleteCookie } from '../utils/cookie';
+import { BASE_URL, TOKEN_ENDPOINT, LOGIN_ENDPOINT, REGISTER_ENDPOINT, LOGOUT_ENDPOINT, USER_ENDPOINT } from '../utils/constants';
 
 export type TUser = {
   email: string;
@@ -70,7 +71,7 @@ const refreshToken = async () => {
       throw new Error('No refresh token available');
     }
 
-    const response = await fetch('https://norma.nomoreparties.space/api/auth/token', {
+    const response = await fetch(`${BASE_URL}${TOKEN_ENDPOINT}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -136,7 +137,7 @@ export const login = createAsyncThunk<TLoginResponse, TLoginRequest>(
   'auth/login',
   async (credentials, { rejectWithValue }) => {
     try {
-      const response = await fetch('https://norma.nomoreparties.space/api/auth/login', {
+      const response = await fetch(`${BASE_URL}${LOGIN_ENDPOINT}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -166,7 +167,7 @@ export const register = createAsyncThunk<TRegisterResponse, TRegisterRequest>(
   'auth/register',
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await fetch('https://norma.nomoreparties.space/api/auth/register', {
+      const response = await fetch(`${BASE_URL}${REGISTER_ENDPOINT}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -202,7 +203,7 @@ export const logout = createAsyncThunk<TLogoutResponse>(
         return rejectWithValue('No refresh token available');
       }
 
-      const response = await fetch('https://norma.nomoreparties.space/api/auth/logout', {
+      const response = await fetch(`${BASE_URL}${LOGOUT_ENDPOINT}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -232,7 +233,7 @@ export const getUser = createAsyncThunk<TUserResponse>(
   'auth/getUser',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetchWithRefresh('https://norma.nomoreparties.space/api/auth/user', {
+      const response = await fetchWithRefresh(`${BASE_URL}${USER_ENDPOINT}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -257,7 +258,7 @@ export const updateUser = createAsyncThunk<TUserResponse, TUpdateUserRequest>(
   'auth/updateUser',
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await fetchWithRefresh('https://norma.nomoreparties.space/api/auth/user', {
+      const response = await fetchWithRefresh(`${BASE_URL}${USER_ENDPOINT}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

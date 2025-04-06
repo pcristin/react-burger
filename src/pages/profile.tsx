@@ -10,6 +10,7 @@ import { getUser, logout, resetError } from '../services/authSlice';
 import { getCookie } from '../utils/cookie';
 import { ProfileOrdersPage } from './profile-orders';
 import styles from './profile.module.css';
+import { BASE_URL, USER_ENDPOINT } from '../utils/constants';
 
 // Component that handles the form for profile editing
 const ProfileForm: React.FC = () => {
@@ -63,7 +64,7 @@ const ProfileForm: React.FC = () => {
       
       // Отправляем запрос напрямую в API вместо использования Redux
       const token = getCookie('token');
-      const response = await fetch('https://norma.nomoreparties.space/api/auth/user', {
+      const response = await fetch(`${BASE_URL}${USER_ENDPOINT}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
