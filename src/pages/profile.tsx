@@ -8,7 +8,6 @@ import {
 import { useAppDispatch, useAppSelector } from '../services/hooks';
 import { getUser, logout, resetError } from '../services/authSlice';
 import { getCookie } from '../utils/cookie';
-import { ProfileOrdersPage } from './profile-orders';
 import styles from './profile.module.css';
 import { BASE_URL, USER_ENDPOINT } from '../utils/constants';
 
