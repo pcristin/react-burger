@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useDrop } from 'react-dnd';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -13,7 +13,7 @@ import {
   moveIngredient,
   resetConstructor
 } from '../../services/constructorSlice';
-import { submitOrder } from '../../services/orderSlice';
+import { submitOrder, resetOrder } from '../../services/orderSlice';
 import { TIngredient } from '../../utils/types';
 import { DraggableConstructorElement } from '../draggable-constructor-element/draggable-constructor-element';
 import styles from './burger-constructor.module.css';
@@ -22,14 +22,34 @@ export const BurgerConstructor: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { bun, ingredients = [] } = useAppSelector(state => state.constructor);
-  const { order, loading } = useAppSelector(state => state.order);
+  const { order, loading, error } = useAppSelector(state => state.order);
   const { isAuthenticated } = useAppSelector(state => state.auth);
+  const [orderPlaced, setOrderPlaced] = useState(false);
 
+  // Сбрасываем конструктор после успешного создания заказа
   useEffect(() => {
-    if (order) {
+    if (order && orderPlaced) {
+      console.log('Order created successfully, resetting constructor');
       dispatch(resetConstructor());
+      
+      // Добавляем таймаут для автоматического закрытия модального окна заказа
+      const timer = setTimeout(() => {
+        console.log('Resetting order after timeout');
+        dispatch(resetOrder());
+        setOrderPlaced(false);
+      }, 2000);
+      
+      return () => clearTimeout(timer);
     }
-  }, [order, dispatch]);
+  }, [order, orderPlaced, dispatch]);
+
+  // Показываем ошибку, если она есть
+  useEffect(() => {
+    if (error) {
+      console.error('Order creation error:', error);
+      setOrderPlaced(false);
+    }
+  }, [error]);
 
   const [{ isHover }, dropTarget] = useDrop({
     accept: 'ingredient',
@@ -70,6 +90,8 @@ export const BurgerConstructor: React.FC = () => {
       bun._id
     ];
     
+    console.log('Placing order with ingredients:', ingredientIds);
+    setOrderPlaced(true);
     dispatch(submitOrder(ingredientIds));
   };
 
@@ -91,15 +113,23 @@ export const BurgerConstructor: React.FC = () => {
       )}
 
       <div className={styles.ingredients}>
-        {ingredients.map((item, index) => (
-          <DraggableConstructorElement
-            key={item.uniqueId}
-            ingredient={item}
-            index={index}
-            handleRemove={() => handleRemove(item.uniqueId)}
-            handleMove={handleMove}
-          />
-        ))}
+        {ingredients.length > 0 ? (
+          ingredients.map((item, index) => (
+            <DraggableConstructorElement
+              key={item.uniqueId}
+              ingredient={item}
+              index={index}
+              handleRemove={() => handleRemove(item.uniqueId)}
+              handleMove={handleMove}
+            />
+          ))
+        ) : (
+          <div className={styles.emptyIngredients}>
+            <span className="text text_type_main-default text_color_inactive">
+              Перетащите ингредиенты сюда
+            </span>
+          </div>
+        )}
       </div>
 
       {bun && (

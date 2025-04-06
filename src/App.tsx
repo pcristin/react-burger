@@ -18,6 +18,10 @@ import { ProfilePage } from './pages/profile';
 import { IngredientPage } from './pages/ingredient';
 import { NotFoundPage } from './pages/not-found';
 import { setCurrentIngredient, resetCurrentIngredient } from './services/currentIngredientSlice';
+import { FeedPage } from './pages/feed';
+import { OrderPage } from './pages/order';
+import { setCurrentOrder, resetCurrentOrder } from './services/currentOrderSlice';
+import { fetchOrderDetails } from './services/feedSlice';
 
 // Component to handle modals with routing
 const ModalSwitch: React.FC = () => {
@@ -26,6 +30,8 @@ const ModalSwitch: React.FC = () => {
   const dispatch = useAppDispatch();
   const { order } = useAppSelector(state => state.order);
   const { items } = useAppSelector(state => state.ingredients);
+  const { orders: feedOrders } = useAppSelector(state => state.feed);
+  const { orders: userOrders } = useAppSelector(state => state.userOrders);
 
   // Check if we have a background location (for modal)
   const background = location.state && location.state.background;
@@ -36,15 +42,30 @@ const ModalSwitch: React.FC = () => {
     dispatch(resetCurrentIngredient());
   };
 
+  // Handle closing the order modal
+  const handleCloseOrderModal = () => {
+    navigate(-1);
+    dispatch(resetCurrentOrder());
+  };
+
   // If we're on an ingredient route and have a background, show the ingredient in a modal
   const isIngredientModal = location.pathname.includes('/ingredients/') && background;
 
-  // If we have an order, show the order details modal
+  // If we're on a feed order route and have a background, show the order in a modal
+  const isFeedOrderModal = location.pathname.includes('/feed/') && location.pathname !== '/feed' && background;
+
+  // If we're on a profile order route and have a background, show the order in a modal
+  const isProfileOrderModal = location.pathname.includes('/profile/orders/') && location.pathname !== '/profile/orders' && background;
+
+  // If we have an order, show the order details modal (for old order creation popup)
   const isOrderModal = order !== null;
 
   // Find the ingredient if we're on an ingredient route
   const ingredientId = isIngredientModal ? location.pathname.split('/').pop() : null;
   const ingredient = ingredientId ? items.find(item => item._id === ingredientId) : null;
+
+  // Find the order if we're on an order route
+  const orderNumber = isFeedOrderModal || isProfileOrderModal ? location.pathname.split('/').pop() : null;
 
   // If we found an ingredient, set it as current
   useEffect(() => {
@@ -52,6 +73,23 @@ const ModalSwitch: React.FC = () => {
       dispatch(setCurrentIngredient(ingredient));
     }
   }, [dispatch, ingredient]);
+
+  // If we found an order number, load the order details
+  useEffect(() => {
+    if (orderNumber) {
+      // First try to find the order in the current state
+      const orderFromFeed = feedOrders.find(o => String(o.number) === orderNumber);
+      const orderFromUserOrders = userOrders.find(o => String(o.number) === orderNumber);
+      const orderToShow = orderFromFeed || orderFromUserOrders;
+
+      if (orderToShow) {
+        dispatch(setCurrentOrder(orderToShow));
+      } else {
+        // If order is not in current state, fetch it from API
+        dispatch(fetchOrderDetails(orderNumber));
+      }
+    }
+  }, [dispatch, orderNumber, feedOrders, userOrders]);
 
   return (
     <>
@@ -73,6 +111,8 @@ const ModalSwitch: React.FC = () => {
           <ProtectedRoute element={<ProfilePage />} />
         } />
         <Route path="/ingredients/:id" element={<IngredientPage />} />
+        <Route path="/feed" element={<FeedPage />} />
+        <Route path="/feed/:number" element={<OrderPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
 
@@ -83,7 +123,21 @@ const ModalSwitch: React.FC = () => {
         </Modal>
       )}
 
-      {/* Order Modal */}
+      {/* Feed Order Modal */}
+      {isFeedOrderModal && (
+        <Modal onClose={handleCloseOrderModal}>
+          <OrderDetails modal={true} />
+        </Modal>
+      )}
+
+      {/* Profile Order Modal */}
+      {isProfileOrderModal && (
+        <Modal onClose={handleCloseOrderModal}>
+          <OrderDetails modal={true} />
+        </Modal>
+      )}
+
+      {/* Order Creation Modal */}
       {isOrderModal && (
         <Modal onClose={() => dispatch(resetOrder())}>
           <OrderDetails />

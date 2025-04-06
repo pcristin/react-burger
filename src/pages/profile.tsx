@@ -1,5 +1,5 @@
 import React, { useState, FormEvent, useEffect } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, Routes, Route } from 'react-router-dom';
 import { 
   Input, 
   EmailInput, 
@@ -8,9 +8,11 @@ import {
 import { useAppDispatch, useAppSelector } from '../services/hooks';
 import { getUser, logout, resetError } from '../services/authSlice';
 import { getCookie } from '../utils/cookie';
+import { ProfileOrdersPage } from './profile-orders';
 import styles from './profile.module.css';
 
-export const ProfilePage: React.FC = () => {
+// Component that handles the form for profile editing
+const ProfileForm: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,15 +21,8 @@ export const ProfilePage: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
   const { user, loading } = useAppSelector(state => state.auth);
   
-  // Fetch user data when component mounts
-  useEffect(() => {
-    dispatch(getUser());
-    dispatch(resetError());
-  }, [dispatch]);
-
   // Update form values when user data changes
   useEffect(() => {
     if (user) {
@@ -122,6 +117,89 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
+  return (
+    <form className={styles.form} onSubmit={handleSubmit}>
+      <div className={styles.inputContainer}>
+        <Input
+          type="text"
+          placeholder="Имя"
+          onChange={e => {
+            setName(e.target.value);
+            handleChange();
+          }}
+          value={name}
+          name="name"
+          icon="EditIcon"
+        />
+      </div>
+      
+      <div className={styles.inputContainer}>
+        <EmailInput
+          onChange={e => {
+            setEmail(e.target.value);
+            handleChange();
+          }}
+          value={email}
+          name="email"
+          placeholder="E-mail"
+          isIcon={true}
+        />
+      </div>
+      
+      <div className={styles.inputContainer}>
+        <Input
+          type="password"
+          placeholder="Пароль"
+          onChange={e => {
+            setPassword(e.target.value);
+            handleChange();
+          }}
+          value={password}
+          name="password"
+          icon="EditIcon"
+        />
+      </div>
+      
+      {successMessage && (
+        <p className={`text text_type_main-default text_color_success ${styles.successMessage}`}>
+          {successMessage}
+        </p>
+      )}
+      
+      {isEditing && (
+        <div className={styles.buttons}>
+          <Button 
+            htmlType="button" 
+            type="secondary" 
+            size="medium"
+            onClick={handleCancel}
+          >
+            Отмена
+          </Button>
+          <Button 
+            htmlType="submit" 
+            type="primary" 
+            size="medium"
+            disabled={loading}
+          >
+            {loading ? 'Сохранение...' : 'Сохранить'}
+          </Button>
+        </div>
+      )}
+    </form>
+  );
+};
+
+export const ProfilePage: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  
+  // Fetch user data when component mounts
+  useEffect(() => {
+    dispatch(getUser());
+    dispatch(resetError());
+  }, [dispatch]);
+
   const handleLogout = () => {
     dispatch(logout())
       .then(() => {
@@ -163,77 +241,10 @@ export const ProfilePage: React.FC = () => {
       </div>
       
       <div className={styles.content}>
-        <Outlet />
-        
-        <form className={styles.form} onSubmit={handleSubmit}>
-          <div className={styles.inputContainer}>
-            <Input
-              type="text"
-              placeholder="Имя"
-              onChange={e => {
-                setName(e.target.value);
-                handleChange();
-              }}
-              value={name}
-              name="name"
-              icon="EditIcon"
-            />
-          </div>
-          
-          <div className={styles.inputContainer}>
-            <EmailInput
-              onChange={e => {
-                setEmail(e.target.value);
-                handleChange();
-              }}
-              value={email}
-              name="email"
-              placeholder="E-mail"
-              isIcon={true}
-            />
-          </div>
-          
-          <div className={styles.inputContainer}>
-            <Input
-              type="password"
-              placeholder="Пароль"
-              onChange={e => {
-                setPassword(e.target.value);
-                handleChange();
-              }}
-              value={password}
-              name="password"
-              icon="EditIcon"
-            />
-          </div>
-          
-          {successMessage && (
-            <p className={`text text_type_main-default text_color_success ${styles.successMessage}`}>
-              {successMessage}
-            </p>
-          )}
-          
-          {isEditing && (
-            <div className={styles.buttons}>
-              <Button 
-                htmlType="button" 
-                type="secondary" 
-                size="medium"
-                onClick={handleCancel}
-              >
-                Отмена
-              </Button>
-              <Button 
-                htmlType="submit" 
-                type="primary" 
-                size="medium"
-                disabled={loading}
-              >
-                {loading ? 'Сохранение...' : 'Сохранить'}
-              </Button>
-            </div>
-          )}
-        </form>
+        <Routes>
+          <Route path="/" element={<ProfileForm />} />
+          <Route path="/orders" element={<ProfileOrdersPage />} />
+        </Routes>
       </div>
     </div>
   );

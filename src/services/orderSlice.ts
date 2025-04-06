@@ -4,9 +4,19 @@ import { TOrderState } from '../utils/types';
 
 export const submitOrder = createAsyncThunk(
   'order/submitOrder',
-  async (ingredients: string[]) => {
-    const response = await createOrder(ingredients);
-    return response.order;
+  async (ingredients: string[], { rejectWithValue }) => {
+    try {
+      console.log('Submitting order with ingredients:', ingredients);
+      const response = await createOrder(ingredients);
+      console.log('Order creation response:', response);
+      return {
+        number: response.order.number,
+        name: response.name
+      };
+    } catch (error) {
+      console.error('Error creating order:', error);
+      return rejectWithValue('Произошла ошибка при создании заказа');
+    }
   }
 );
 
@@ -22,8 +32,15 @@ const orderSlice = createSlice({
   reducers: {
     resetOrder: (state) => {
       state.order = null;
+      state.loading = false;
       state.error = null;
     },
+    
+    orderSuccess: (state, action) => {
+      state.order = action.payload;
+      state.loading = false;
+      state.error = null;
+    }
   },
   extraReducers: (builder) => {
     builder
@@ -37,11 +54,13 @@ const orderSlice = createSlice({
       })
       .addCase(submitOrder.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || 'Произошла ошибка при создании заказа';
+        state.error = typeof action.payload === 'string' 
+          ? action.payload 
+          : action.error.message || 'Произошла ошибка при создании заказа';
       });
   },
 });
 
-export const { resetOrder } = orderSlice.actions;
+export const { resetOrder, orderSuccess } = orderSlice.actions;
 
 export default orderSlice.reducer; 

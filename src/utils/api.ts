@@ -18,4 +18,10 @@ export const createOrder = (ingredients: string[]) => {
     body: JSON.stringify({ ingredients }),
   })
     .then(checkResponse);
+};
+
+// Get order details by number
+export const getOrderDetails = (number: string) => {
+  return fetch(`${API_URL}/orders/${number}`)
+    .then(checkResponse);
 }; 
