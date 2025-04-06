@@ -62,12 +62,15 @@ const formatDate = (dateString: string): string => {
 };
 
 export const OrderCard: React.FC<OrderCardProps> = ({ order, price, showStatus = true }) => {
-  const { items } = useAppSelector(state => state.ingredients);
+  const { items, loading: ingredientsLoading } = useAppSelector(state => state.ingredients);
   
   // Get unique ingredients to display (max 6)
   const ingredientsToShow = Array.from(new Set(order.ingredients)).slice(0, 6);
   const hasMoreIngredients = order.ingredients.length > 6;
   const hiddenCount = order.ingredients.length - 6;
+  
+  // Check if ingredients data is available
+  const ingredientsLoaded = items.length > 0 && !ingredientsLoading;
   
   return (
     <div className={styles.card}>
@@ -86,27 +89,31 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, price, showStatus =
       
       <div className={styles.footer}>
         <div className={styles.ingredients}>
-          {ingredientsToShow.map((id, index) => {
-            const ingredient = items.find(item => item._id === id);
-            if (!ingredient) return null;
-            
-            return (
-              <div 
-                key={index} 
-                className={styles.ingredient}
-                style={{ zIndex: 6 - index }}
-              >
-                <img 
-                  src={ingredient.image_mobile} 
-                  alt={ingredient.name} 
-                  className={styles.ingredientImage} 
-                />
-                {index === 5 && hasMoreIngredients && (
-                  <div className={styles.moreCount}>+{hiddenCount}</div>
-                )}
-              </div>
-            );
-          })}
+          {!ingredientsLoaded ? (
+            <span className={styles.loading}>Загрузка...</span>
+          ) : (
+            ingredientsToShow.map((id, index) => {
+              const ingredient = items.find(item => item._id === id);
+              if (!ingredient) return null;
+              
+              return (
+                <div 
+                  key={index} 
+                  className={styles.ingredient}
+                  style={{ zIndex: 6 - index }}
+                >
+                  <img 
+                    src={ingredient.image_mobile} 
+                    alt={ingredient.name} 
+                    className={styles.ingredientImage} 
+                  />
+                  {index === 5 && hasMoreIngredients && (
+                    <div className={styles.moreCount}>+{hiddenCount}</div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
         
         <div className={styles.price}>

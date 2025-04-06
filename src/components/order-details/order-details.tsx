@@ -68,17 +68,24 @@ const formatDate = (dateString?: string): string => {
 
 export const OrderDetails: React.FC<OrderDetailsProps> = ({ modal = false }) => {
   const dispatch = useAppDispatch();
-  const { order, loading, error } = useAppSelector(state => state.order);
-  const { order: currentOrder } = useAppSelector(state => state.currentOrder);
-  const { items } = useAppSelector(state => state.ingredients);
+  const { order, loading: orderLoading, error: orderError } = useAppSelector(state => state.order);
+  const { order: currentOrder, loading: currentOrderLoading, error: currentOrderError } = useAppSelector(state => state.currentOrder);
+  const { items, loading: ingredientsLoading } = useAppSelector(state => state.ingredients);
   
-  // Используем текущий заказ для деталей, если это не модальное окно создания заказа
-  const orderToDisplay = modal && currentOrder ? currentOrder : order;
+  // Определяем, какой заказ отображать в зависимости от контекста
+  // Если это новый заказ (в модальном окне создания заказа), используем заказ из orderSlice
+  // В противном случае, используем заказ из currentOrderSlice (для истории заказов/ленты заказов)
+  const orderToDisplay = order && !modal ? order : currentOrder;
+  const loading = modal ? currentOrderLoading : orderLoading;
+  const error = modal ? currentOrderError : orderError;
 
-  // Автоматическое закрытие модального окна через 2 секунды после завершения загрузки
+  // Check if we're still loading ingredients
+  const isLoading = loading || (ingredientsLoading && items.length === 0);
+
+  // Автоматическое закрытие модального окна только для новых заказов
   React.useEffect(() => {
-    if (order && !loading) {
-      console.log('Order loaded, will reset after 2 seconds');
+    if (order && !orderLoading && !modal) {
+      console.log('The order is loaded, it will be reset after 2 seconds');
       const timer = setTimeout(() => {
         console.log('Resetting order state');
         dispatch(resetOrder());
@@ -86,9 +93,9 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ modal = false }) => 
       
       return () => clearTimeout(timer);
     }
-  }, [order, loading, dispatch]);
+  }, [order, orderLoading, dispatch, modal]);
 
-  if (loading) {
+  if (isLoading) {
     return <div className={styles.loading}>Загрузка...</div>;
   }
   
@@ -100,8 +107,12 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ modal = false }) => 
     return <div className={styles.loading}>Нет данных о заказе</div>;
   }
 
-  // Для обычного заказа, который только что создан
-  if (!modal && order) {
+  if (items.length === 0) {
+    return <div className={styles.loading}>Загрузка ингредиентов...</div>;
+  }
+
+  // Для заказа, который только что создан
+  if (!modal && order && order === orderToDisplay) {
     return (
       <div className={styles.container}>
         <p className={styles.number}>#{order.number}</p>
@@ -117,7 +128,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ modal = false }) => 
     );
   }
 
-  // Group ingredients by ID and count occurrences
+  // Группировка ингредиентов по ID и подсчет количества вхождений
   const ingredientCounts: Record<string, number> = {};
   if (orderToDisplay.ingredients && Array.isArray(orderToDisplay.ingredients)) {
     orderToDisplay.ingredients.forEach(id => {
@@ -127,7 +138,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ modal = false }) => 
     });
   }
 
-  // Get unique ingredients with their details
+  // Получение уникальных ингредиентов с их деталями
   const uniqueIngredients = Object.keys(ingredientCounts).map(id => {
     const ingredient = items.find(item => item._id === id);
     return {
@@ -137,7 +148,7 @@ export const OrderDetails: React.FC<OrderDetailsProps> = ({ modal = false }) => 
     };
   });
 
-  // Calculate total price
+  // Расчет общей стоимости
   const totalPrice = uniqueIngredients.reduce((total, { count, ingredient }) => {
     return total + (ingredient ? ingredient.price * count : 0);
   }, 0);

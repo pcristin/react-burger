@@ -1,15 +1,30 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAppSelector } from '../services/hooks';
+import { useAppSelector, useAppDispatch } from '../services/hooks';
 import * as WebSocketManager from '../services/websocketManager';
+import { fetchIngredients } from '../services/ingredientsSlice';
 import { OrderCard } from '../components/order-card/order-card';
 import styles from './profile-orders.module.css';
 
 export const ProfileOrdersPage: React.FC = () => {
   const location = useLocation();
-  const { orders, loading, error } = useAppSelector(state => state.userOrders);
-  const { items } = useAppSelector(state => state.ingredients);
+  const dispatch = useAppDispatch();
+  const { orders, loading: ordersLoading, error } = useAppSelector(state => state.userOrders);
+  const { items, loading: ingredientsLoading } = useAppSelector(state => state.ingredients);
   const { isAuthenticated } = useAppSelector(state => state.auth);
+
+  // Log component mount
+  useEffect(() => {
+    console.log('PROFILE ORDERS PAGE MOUNTED');
+  }, []);
+
+  // Load ingredients if they're not already loaded
+  useEffect(() => {
+    if (items.length === 0 && !ingredientsLoading) {
+      console.log('ProfileOrdersPage: Loading ingredients data');
+      dispatch(fetchIngredients());
+    }
+  }, [dispatch, items.length, ingredientsLoading]);
 
   // Connect to WebSocket when component mounts
   useEffect(() => {
@@ -58,14 +73,19 @@ export const ProfileOrdersPage: React.FC = () => {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
+  // Check if we're still loading data
+  const isLoading = ordersLoading || (ingredientsLoading && items.length === 0);
+
   return (
     <div className={styles.container}>
-      {loading ? (
+      {isLoading ? (
         <p className={styles.loading}>Загрузка заказов...</p>
       ) : error ? (
         <p className={styles.error}>{error}</p>
       ) : sortedOrders.length === 0 ? (
         <p className={styles.empty}>У вас пока нет заказов</p>
+      ) : items.length === 0 ? (
+        <p className={styles.loading}>Загрузка ингредиентов...</p>
       ) : (
         <ul className={styles.ordersList}>
           {sortedOrders.map(order => (

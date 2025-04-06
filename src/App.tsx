@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from './services/hooks';
 import { checkAuth } from './services/authSlice';
@@ -22,6 +22,8 @@ import { FeedPage } from './pages/feed';
 import { OrderPage } from './pages/order';
 import { setCurrentOrder, resetCurrentOrder } from './services/currentOrderSlice';
 import { fetchOrderDetails } from './services/feedSlice';
+import { fetchIngredients } from './services/ingredientsSlice';
+import { ProfileOrdersPage } from './pages/profile-orders';
 
 // Component to handle modals with routing
 const ModalSwitch: React.FC = () => {
@@ -29,12 +31,20 @@ const ModalSwitch: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { order } = useAppSelector(state => state.order);
-  const { items } = useAppSelector(state => state.ingredients);
+  const { items, loading: ingredientsLoading } = useAppSelector(state => state.ingredients);
   const { orders: feedOrders } = useAppSelector(state => state.feed);
   const { orders: userOrders } = useAppSelector(state => state.userOrders);
 
   // Check if we have a background location (for modal)
   const background = location.state && location.state.background;
+
+  // Load ingredients if they're not already loaded
+  useEffect(() => {
+    if (items.length === 0 && !ingredientsLoading) {
+      console.log('ModalSwitch: Loading ingredients data');
+      dispatch(fetchIngredients());
+    }
+  }, [dispatch, items.length, ingredientsLoading]);
 
   // Handle closing the modal
   const handleCloseModal = () => {
@@ -55,9 +65,16 @@ const ModalSwitch: React.FC = () => {
   const isFeedOrderModal = location.pathname.includes('/feed/') && location.pathname !== '/feed' && background;
 
   // If we're on a profile order route and have a background, show the order in a modal
-  const isProfileOrderModal = location.pathname.includes('/profile/orders/') && location.pathname !== '/profile/orders' && background;
+  const isProfileOrderModal = location.pathname.includes('/profile/orders/') && 
+                              location.pathname !== '/profile/orders' && 
+                              background;
 
-  // If we have an order, show the order details modal (for old order creation popup)
+  // If we're directly accessing a profile order route (no background), we show the standalone page
+  const isDirectProfileOrderAccess = location.pathname.includes('/profile/orders/') && 
+                                    location.pathname !== '/profile/orders' && 
+                                    !background;
+
+  // If we have an order, show the order details modal (for order creation popup)
   const isOrderModal = order !== null;
 
   // Find the ingredient if we're on an ingredient route
@@ -77,19 +94,43 @@ const ModalSwitch: React.FC = () => {
   // If we found an order number, load the order details
   useEffect(() => {
     if (orderNumber) {
+      console.log(`Loading order details for order #${orderNumber}`);
+      
       // First try to find the order in the current state
       const orderFromFeed = feedOrders.find(o => String(o.number) === orderNumber);
       const orderFromUserOrders = userOrders.find(o => String(o.number) === orderNumber);
       const orderToShow = orderFromFeed || orderFromUserOrders;
 
       if (orderToShow) {
+        console.log(`Found order #${orderNumber} in state, using cached data`);
         dispatch(setCurrentOrder(orderToShow));
       } else {
         // If order is not in current state, fetch it from API
+        console.log(`Order #${orderNumber} not found in state, fetching from API`);
         dispatch(fetchOrderDetails(orderNumber));
       }
     }
   }, [dispatch, orderNumber, feedOrders, userOrders]);
+
+  // If we're directly accessing a profile order, ensure we're loading it properly
+  useEffect(() => {
+    if (isDirectProfileOrderAccess && !background) {
+      const directOrderNumber = location.pathname.split('/').pop();
+      if (directOrderNumber) {
+        console.log(`Direct access to profile order #${directOrderNumber}, ensuring it's loaded`);
+        
+        // Check if we already have the order loaded
+        const existingOrder = userOrders.find(o => String(o.number) === directOrderNumber);
+        if (!existingOrder) {
+          console.log(`Order #${directOrderNumber} not loaded yet, fetching from API`);
+          dispatch(fetchOrderDetails(directOrderNumber));
+        } else {
+          console.log(`Order #${directOrderNumber} already loaded, using cached data`);
+          dispatch(setCurrentOrder(existingOrder));
+        }
+      }
+    }
+  }, [dispatch, isDirectProfileOrderAccess, background, location.pathname, userOrders]);
 
   return (
     <>
@@ -107,9 +148,11 @@ const ModalSwitch: React.FC = () => {
         <Route path="/reset-password" element={
           <ProtectedRoute element={<ResetPasswordPage />} anonymous={true} />
         } />
-        <Route path="/profile/*" element={
+        <Route path="/profile" element={
           <ProtectedRoute element={<ProfilePage />} />
-        } />
+        }>
+          <Route path="orders" element={<ProfileOrdersPage />} />
+        </Route>
         <Route path="/profile/orders/:number" element={
           <ProtectedRoute element={<OrderPage />} />
         } />
@@ -152,11 +195,29 @@ const ModalSwitch: React.FC = () => {
 
 function App() {
   const dispatch = useAppDispatch();
+  const [authCheckAttempted, setAuthCheckAttempted] = useState(false);
+  const { isAuthenticated } = useAppSelector(state => state.auth);
 
-  // Check authentication status on app load
+  // Check authentication status on app load only once
   useEffect(() => {
-    dispatch(checkAuth());
-  }, [dispatch]);
+    // Only check auth if:
+    // 1. We haven't attempted a check yet
+    // 2. We're not already authenticated
+    if (!authCheckAttempted && !isAuthenticated) {
+      console.log('App: Checking authentication status');
+      setAuthCheckAttempted(true);
+      
+      dispatch(checkAuth())
+        .unwrap()
+        .then(() => {
+          console.log('Authentication check successful');
+        })
+        .catch(err => {
+          console.log('Authentication check failed, proceeding as unauthenticated:', err);
+          // This is fine, we'll proceed as unauthenticated
+        });
+    }
+  }, [dispatch, authCheckAttempted, isAuthenticated]);
 
   return (
     <Router>

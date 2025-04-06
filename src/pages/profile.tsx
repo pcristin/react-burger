@@ -1,5 +1,5 @@
 import React, { useState, FormEvent, useEffect } from 'react';
-import { NavLink, useNavigate, Routes, Route } from 'react-router-dom';
+import { NavLink, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { 
   Input, 
   EmailInput, 
@@ -194,12 +194,33 @@ const ProfileForm: React.FC = () => {
 export const ProfilePage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user, isAuthenticated, loading } = useAppSelector(state => state.auth);
+  const [fetchAttempted, setFetchAttempted] = useState(false);
   
-  // Fetch user data when component mounts
+  // Determine if we're on the profile page or orders page
+  const isProfilePath = location.pathname === "/profile";
+  
+  // Fetch user data only if:
+  // 1. We are authenticated
+  // 2. We don't have user data
+  // 3. We haven't already attempted a fetch
+  // 4. We're not currently loading
   useEffect(() => {
-    dispatch(getUser());
-    dispatch(resetError());
-  }, [dispatch]);
+    if (isAuthenticated && !user && !fetchAttempted && !loading) {
+      console.log('ProfilePage: Fetching user data once');
+      setFetchAttempted(true);
+      
+      dispatch(getUser())
+        .unwrap()
+        .then(data => {
+          console.log('User data loaded successfully ', data);
+        })
+        .catch(err => {
+          console.error('Error fetching user data:', err);
+        });
+    }
+  }, [dispatch, isAuthenticated, user, fetchAttempted, loading]);
 
   const handleLogout = () => {
     dispatch(logout())
@@ -242,10 +263,7 @@ export const ProfilePage: React.FC = () => {
       </div>
       
       <div className={styles.content}>
-        <Routes>
-          <Route path="/" element={<ProfileForm />} />
-          <Route path="/orders" element={<ProfileOrdersPage />} />
-        </Routes>
+        {isProfilePath ? <ProfileForm /> : <Outlet />}
       </div>
     </div>
   );

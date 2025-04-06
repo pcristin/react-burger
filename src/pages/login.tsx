@@ -12,6 +12,8 @@ import styles from './auth.module.css';
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [attempt, setAttempt] = useState(0);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useAppDispatch();
@@ -23,7 +25,15 @@ export const LoginPage: React.FC = () => {
   // Reset error when component mounts
   useEffect(() => {
     dispatch(resetError());
+    setLoginError(null);
   }, [dispatch]);
+
+  // Update login error when redux error changes
+  useEffect(() => {
+    if (error) {
+      setLoginError(error);
+    }
+  }, [error]);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -32,9 +42,25 @@ export const LoginPage: React.FC = () => {
     }
   }, [isAuthenticated, navigate, from]);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    dispatch(login({ email, password }));
+    setLoginError(null);
+    
+    if (!email || !password) {
+      setLoginError('Введите email и пароль');
+      return;
+    }
+    
+    try {
+      setAttempt(prev => prev + 1);
+      console.log(`Login attempt ${attempt + 1}`);
+      
+      const result = await dispatch(login({ email, password })).unwrap();
+      console.log('Login success:', result);
+    } catch (err) {
+      console.error('Login failed:', err);
+      setLoginError(typeof err === 'string' ? err : 'Ошибка авторизации. Повторите попытку позже.');
+    }
   };
 
   return (
@@ -61,8 +87,8 @@ export const LoginPage: React.FC = () => {
           />
         </div>
         
-        {error && (
-          <p className="text text_type_main-default text_color_error">{error}</p>
+        {loginError && (
+          <p className="text text_type_main-default text_color_error">{loginError}</p>
         )}
         
         <Button 

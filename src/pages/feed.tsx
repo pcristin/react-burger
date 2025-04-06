@@ -1,14 +1,24 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAppSelector } from '../services/hooks';
+import { useAppSelector, useAppDispatch } from '../services/hooks';
 import * as WebSocketManager from '../services/websocketManager';
+import { fetchIngredients } from '../services/ingredientsSlice';
 import { OrderCard } from '../components/order-card/order-card';
 import styles from './feed.module.css';
 
 export const FeedPage: React.FC = () => {
   const location = useLocation();
+  const dispatch = useAppDispatch();
   const { orders, total, totalToday, loading, error } = useAppSelector(state => state.feed);
-  const { items } = useAppSelector(state => state.ingredients);
+  const { items, loading: ingredientsLoading } = useAppSelector(state => state.ingredients);
+  
+  // Load ingredients if they're not already loaded
+  useEffect(() => {
+    if (items.length === 0 && !ingredientsLoading) {
+      console.log('FeedPage: Loading ingredients data');
+      dispatch(fetchIngredients());
+    }
+  }, [dispatch, items.length, ingredientsLoading]);
   
   // Connect to WebSocket when component mounts
   useEffect(() => {
@@ -31,6 +41,9 @@ export const FeedPage: React.FC = () => {
     }, 0);
   };
 
+  // Check if we're still loading data
+  const isLoading = loading || (ingredientsLoading && items.length === 0);
+
   // Separate orders into "done" and "in progress"
   const doneOrders = orders.filter(order => order.status === 'done').slice(0, 20);
   const inProgressOrders = orders.filter(order => order.status === 'pending' || order.status === 'created').slice(0, 20);
@@ -44,7 +57,9 @@ export const FeedPage: React.FC = () => {
     ordersCount: orders.length, 
     total, 
     totalToday, 
-    loading, 
+    loading,
+    ingredientsLoading,
+    ingredientsCount: items.length,
     error,
     doneCount: doneOrders.length,
     inProgressCount: inProgressOrders.length
@@ -57,12 +72,14 @@ export const FeedPage: React.FC = () => {
       <div className={styles.content}>
         {/* Orders List */}
         <div className={styles.ordersContainer}>
-          {loading ? (
+          {isLoading ? (
             <p className={styles.loading}>Загрузка заказов...</p>
           ) : error ? (
             <p className={styles.error}>{error}</p>
           ) : orders.length === 0 ? (
             <p className={styles.loading}>Ожидание данных с сервера...</p>
+          ) : items.length === 0 ? (
+            <p className={styles.loading}>Загрузка ингредиентов...</p>
           ) : (
             <ul className={styles.ordersList}>
               {orders.map(order => (
