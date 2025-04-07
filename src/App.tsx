@@ -38,6 +38,26 @@ const ModalSwitch: React.FC = () => {
   // Check if we have a background location (for modal)
   const background = location.state && location.state.background;
 
+  // Check for a saved path from session storage (for page refreshes)
+  useEffect(() => {
+    const savedPath = sessionStorage.getItem('currentOrderPath');
+    if (savedPath && location.pathname === '/') {
+      console.log(`Found saved path ${savedPath}, navigating there instead of constructor`);
+      // Clear the saved path immediately to prevent navigation loops
+      sessionStorage.removeItem('currentOrderPath');
+      // Navigate to the saved path
+      navigate(savedPath);
+    }
+  }, [navigate, location.pathname]);
+
+  // Save current path to session storage before refresh when on an order page
+  useEffect(() => {
+    if (location.pathname.includes('/profile/orders/') || location.pathname.includes('/feed/')) {
+      sessionStorage.setItem('currentOrderPath', location.pathname);
+      console.log(`Saved current path ${location.pathname} to session storage for potential refresh`);
+    }
+  }, [location.pathname]);
+
   // Load ingredients if they're not already loaded
   useEffect(() => {
     if (items.length === 0 && !ingredientsLoading) {
@@ -73,6 +93,11 @@ const ModalSwitch: React.FC = () => {
   const isDirectProfileOrderAccess = location.pathname.includes('/profile/orders/') && 
                                     location.pathname !== '/profile/orders' && 
                                     !background;
+
+  // If we're directly accessing a feed order route (no background), we show the standalone page
+  const isDirectFeedOrderAccess = location.pathname.includes('/feed/') &&
+                                  location.pathname !== '/feed' &&
+                                  !background;
 
   // If we have an order, show the order details modal (for order creation popup)
   const isOrderModal = order !== null;
@@ -112,15 +137,18 @@ const ModalSwitch: React.FC = () => {
     }
   }, [dispatch, orderNumber, feedOrders, userOrders]);
 
-  // If we're directly accessing a profile order, ensure we're loading it properly
+  // If we're directly accessing a profile order or feed order, ensure we're loading it properly
   useEffect(() => {
-    if (isDirectProfileOrderAccess && !background) {
+    if ((isDirectProfileOrderAccess || isDirectFeedOrderAccess) && !background) {
       const directOrderNumber = location.pathname.split('/').pop();
       if (directOrderNumber) {
-        console.log(`Direct access to profile order #${directOrderNumber}, ensuring it's loaded`);
+        console.log(`Direct access to order #${directOrderNumber}, ensuring it's loaded`);
         
-        // Check if we already have the order loaded
-        const existingOrder = userOrders.find(o => String(o.number) === directOrderNumber);
+        // Check if we already have the order loaded in appropriate state
+        const existingOrderFromFeed = feedOrders.find(o => String(o.number) === directOrderNumber);
+        const existingOrderFromUserOrders = userOrders.find(o => String(o.number) === directOrderNumber);
+        const existingOrder = existingOrderFromFeed || existingOrderFromUserOrders;
+        
         if (!existingOrder) {
           console.log(`Order #${directOrderNumber} not loaded yet, fetching from API`);
           dispatch(fetchOrderDetails(directOrderNumber));
@@ -130,7 +158,7 @@ const ModalSwitch: React.FC = () => {
         }
       }
     }
-  }, [dispatch, isDirectProfileOrderAccess, background, location.pathname, userOrders]);
+  }, [dispatch, isDirectProfileOrderAccess, isDirectFeedOrderAccess, background, location.pathname, feedOrders, userOrders]);
 
   return (
     <>

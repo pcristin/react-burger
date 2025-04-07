@@ -134,9 +134,42 @@ export const disconnectAll = (): void => {
   });
 };
 
-// При закрытии страницы закрываем все соединения
+// Save connection state to sessionStorage before page unload
+// This helps to restore connections after page refresh
 window.addEventListener('beforeunload', () => {
-  disconnectAll();
+  // Only save active connections to sessionStorage
+  const activeConnections = Object.entries(connections)
+    .filter(([_, isActive]) => isActive)
+    .map(([name]) => name);
+  
+  if (activeConnections.length > 0) {
+    sessionStorage.setItem('activeWebsocketConnections', JSON.stringify(activeConnections));
+    console.log('Saved active websocket connections to sessionStorage:', activeConnections);
+  }
+});
+
+// Try to restore WebSocket connections on page load
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    const savedConnections = sessionStorage.getItem('activeWebsocketConnections');
+    if (savedConnections) {
+      const connectionsToRestore = JSON.parse(savedConnections) as ConnectionName[];
+      console.log('Restoring WebSocket connections from sessionStorage:', connectionsToRestore);
+      
+      // Wait a bit to ensure Redux store is initialized
+      setTimeout(() => {
+        connectionsToRestore.forEach(name => {
+          console.log(`Restoring ${name} connection`);
+          connect(name);
+        });
+      }, 1000);
+      
+      // Clear after restoration attempt
+      sessionStorage.removeItem('activeWebsocketConnections');
+    }
+  } catch (error) {
+    console.error('Error restoring WebSocket connections:', error);
+  }
 });
 
 // При отключении сети закрываем все соединения

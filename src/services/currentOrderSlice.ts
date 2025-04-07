@@ -9,6 +9,21 @@ const initialState: TCurrentOrderState = {
   error: null
 };
 
+// Check if we have any saved order in sessionStorage from a previous session
+const savedOrder = sessionStorage.getItem('currentOrder');
+if (savedOrder) {
+  try {
+    const parsedOrder = JSON.parse(savedOrder);
+    if (parsedOrder && typeof parsedOrder === 'object') {
+      console.log('Restored order from sessionStorage:', parsedOrder.number);
+      initialState.order = parsedOrder;
+    }
+  } catch (e) {
+    console.error('Error parsing saved order:', e);
+    sessionStorage.removeItem('currentOrder');
+  }
+}
+
 // Create slice for current order details
 const currentOrderSlice = createSlice({
   name: 'currentOrder',
@@ -19,6 +34,8 @@ const currentOrderSlice = createSlice({
       state.order = action.payload;
       state.loading = false;
       state.error = null;
+      // Save to sessionStorage for persistence across refreshes
+      sessionStorage.setItem('currentOrder', JSON.stringify(action.payload));
     },
     
     // Reset current order
@@ -26,6 +43,8 @@ const currentOrderSlice = createSlice({
       state.order = null;
       state.loading = false;
       state.error = null;
+      // Clear from sessionStorage
+      sessionStorage.removeItem('currentOrder');
     },
     
     // Reset error state
@@ -42,6 +61,8 @@ const currentOrderSlice = createSlice({
       .addCase(fetchOrderDetails.fulfilled, (state, action) => {
         state.loading = false;
         state.order = action.payload;
+        // Save to sessionStorage
+        sessionStorage.setItem('currentOrder', JSON.stringify(action.payload));
       })
       .addCase(fetchOrderDetails.rejected, (state, action) => {
         state.loading = false;
