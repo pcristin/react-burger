@@ -1,5 +1,6 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { setCookie, getCookie, deleteCookie } from '../utils/cookie';
+import { BASE_URL, TOKEN_ENDPOINT, LOGIN_ENDPOINT, REGISTER_ENDPOINT, LOGOUT_ENDPOINT, USER_ENDPOINT } from '../utils/constants';
 
 export type TUser = {
   email: string;
@@ -70,7 +71,8 @@ const refreshToken = async () => {
       throw new Error('No refresh token available');
     }
 
-    const response = await fetch('https://norma.nomoreparties.space/api/auth/token', {
+    console.log('Attempting to refresh token');
+    const response = await fetch(`${BASE_URL}${TOKEN_ENDPOINT}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -81,9 +83,11 @@ const refreshToken = async () => {
     const data: TTokenResponse = await response.json();
 
     if (!data.success) {
+      console.error('API reported token refresh failure:', data);
       throw new Error('Failed to refresh token');
     }
 
+    console.log('Token refreshed successfully');
     // Save the new tokens
     setCookie('token', data.accessToken.split('Bearer ')[1]);
     setCookie('refreshToken', data.refreshToken);
@@ -91,12 +95,17 @@ const refreshToken = async () => {
     return data.accessToken;
   } catch (error) {
     console.error('Error refreshing token:', error);
+    // Clear tokens on refresh failure
+    deleteCookie('token');
+    deleteCookie('refreshToken');
     throw error;
   }
 };
 
 // Helper function for authenticated API requests with token refresh
-const fetchWithRefresh = async (url: string, options: RequestInit) => {
+const fetchWithRefresh = async (url: string, options: RequestInit, retryCount = 0) => {
+  const MAX_RETRIES = 2;
+  
   try {
     const token = getCookie('token');
     
@@ -108,26 +117,60 @@ const fetchWithRefresh = async (url: string, options: RequestInit) => {
       };
     }
 
+    // If we're retrying, add some delay to avoid rate limiting
+    if (retryCount > 0) {
+      await new Promise(resolve => setTimeout(resolve, retryCount * 1500));
+    }
+
     let response = await fetch(url, options);
+    
+    // Handle rate limit (429) errors
+    if (response.status === 429) {
+      console.warn(`Rate limit hit (429). Retry count: ${retryCount}/${MAX_RETRIES}`);
+      
+      if (retryCount < MAX_RETRIES) {
+        // Wait longer for rate limit errors
+        await new Promise(resolve => setTimeout(resolve, 2000 + retryCount * 1000));
+        return fetchWithRefresh(url, options, retryCount + 1);
+      } else {
+        throw new Error('Rate limit exceeded after maximum retries');
+      }
+    }
     
     // If unauthorized, try to refresh token and retry
     if (response.status === 401 || response.status === 403) {
-      const newToken = await refreshToken();
-      
-      // Update headers with new token
-      options.headers = {
-        ...options.headers,
-        Authorization: newToken,
-      };
-      
-      // Retry the request
-      response = await fetch(url, options);
+      // Only attempt token refresh if we haven't tried too many times
+      if (retryCount < MAX_RETRIES) {
+        console.log('Auth token expired, attempting refresh');
+        try {
+          const newToken = await refreshToken();
+          
+          // Update headers with new token
+          options.headers = {
+            ...options.headers,
+            Authorization: newToken,
+          };
+          
+          // Retry the request with new token
+          return fetchWithRefresh(url, options, retryCount + 1);
+        } catch (refreshError) {
+          console.error('Token refresh failed:', refreshError);
+          throw new Error('Authentication failed after token refresh attempt');
+        }
+      } else {
+        throw new Error('Authentication failed after maximum retries');
+      }
     }
 
     return response;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in fetchWithRefresh:', error);
-    throw error;
+    // Add retry info to the error for better debugging
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const enhancedError = new Error(
+      `API request failed (attempt ${retryCount + 1}/${MAX_RETRIES + 1}): ${errorMessage}`
+    );
+    throw enhancedError;
   }
 };
 
@@ -136,7 +179,9 @@ export const login = createAsyncThunk<TLoginResponse, TLoginRequest>(
   'auth/login',
   async (credentials, { rejectWithValue }) => {
     try {
-      const response = await fetch('https://norma.nomoreparties.space/api/auth/login', {
+      console.log('Attempting login with credentials:', { email: credentials.email, password: '***' });
+      
+      const response = await fetch(`${BASE_URL}${LOGIN_ENDPOINT}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -147,16 +192,20 @@ export const login = createAsyncThunk<TLoginResponse, TLoginRequest>(
       const data = await response.json();
 
       if (!data.success) {
+        console.error('API reported login failure:', data);
         return rejectWithValue(data.message || 'Login failed');
       }
 
+      console.log('Login successful, setting cookies');
       // Save tokens
       setCookie('token', data.accessToken.split('Bearer ')[1]);
       setCookie('refreshToken', data.refreshToken);
 
       return data;
     } catch (error) {
-      return rejectWithValue('Network error occurred');
+      console.error('Login error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Network error occurred';
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -166,7 +215,7 @@ export const register = createAsyncThunk<TRegisterResponse, TRegisterRequest>(
   'auth/register',
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await fetch('https://norma.nomoreparties.space/api/auth/register', {
+      const response = await fetch(`${BASE_URL}${REGISTER_ENDPOINT}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -202,7 +251,7 @@ export const logout = createAsyncThunk<TLogoutResponse>(
         return rejectWithValue('No refresh token available');
       }
 
-      const response = await fetch('https://norma.nomoreparties.space/api/auth/logout', {
+      const response = await fetch(`${BASE_URL}${LOGOUT_ENDPOINT}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -232,7 +281,7 @@ export const getUser = createAsyncThunk<TUserResponse>(
   'auth/getUser',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetchWithRefresh('https://norma.nomoreparties.space/api/auth/user', {
+      const response = await fetchWithRefresh(`${BASE_URL}${USER_ENDPOINT}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -257,7 +306,7 @@ export const updateUser = createAsyncThunk<TUserResponse, TUpdateUserRequest>(
   'auth/updateUser',
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await fetchWithRefresh('https://norma.nomoreparties.space/api/auth/user', {
+      const response = await fetchWithRefresh(`${BASE_URL}${USER_ENDPOINT}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

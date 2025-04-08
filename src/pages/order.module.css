@@ -1,0 +1,17 @@
+.container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 120px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.loading, .error {
+  font-size: 20px;
+  color: #F2F2F3;
+  text-align: center;
+}
+
+.error {
+  color: #FF5555;
+} 

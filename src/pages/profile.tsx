@@ -1,5 +1,5 @@
 import React, { useState, FormEvent, useEffect } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { 
   Input, 
   EmailInput, 
@@ -9,8 +9,10 @@ import { useAppDispatch, useAppSelector } from '../services/hooks';
 import { getUser, logout, resetError } from '../services/authSlice';
 import { getCookie } from '../utils/cookie';
 import styles from './profile.module.css';
+import { BASE_URL, USER_ENDPOINT } from '../utils/constants';
 
-export const ProfilePage: React.FC = () => {
+// Component that handles the form for profile editing
+const ProfileForm: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,15 +21,8 @@ export const ProfilePage: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
   const { user, loading } = useAppSelector(state => state.auth);
   
-  // Fetch user data when component mounts
-  useEffect(() => {
-    dispatch(getUser());
-    dispatch(resetError());
-  }, [dispatch]);
-
   // Update form values when user data changes
   useEffect(() => {
     if (user) {
@@ -68,7 +63,7 @@ export const ProfilePage: React.FC = () => {
       
       // Отправляем запрос напрямую в API вместо использования Redux
       const token = getCookie('token');
-      const response = await fetch('https://norma.nomoreparties.space/api/auth/user', {
+      const response = await fetch(`${BASE_URL}${USER_ENDPOINT}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -122,6 +117,110 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
+  return (
+    <form className={styles.form} onSubmit={handleSubmit}>
+      <div className={styles.inputContainer}>
+        <Input
+          type="text"
+          placeholder="Имя"
+          onChange={e => {
+            setName(e.target.value);
+            handleChange();
+          }}
+          value={name}
+          name="name"
+          icon="EditIcon"
+        />
+      </div>
+      
+      <div className={styles.inputContainer}>
+        <EmailInput
+          onChange={e => {
+            setEmail(e.target.value);
+            handleChange();
+          }}
+          value={email}
+          name="email"
+          placeholder="E-mail"
+          isIcon={true}
+        />
+      </div>
+      
+      <div className={styles.inputContainer}>
+        <Input
+          type="password"
+          placeholder="Пароль"
+          onChange={e => {
+            setPassword(e.target.value);
+            handleChange();
+          }}
+          value={password}
+          name="password"
+          icon="EditIcon"
+        />
+      </div>
+      
+      {successMessage && (
+        <p className={`text text_type_main-default text_color_success ${styles.successMessage}`}>
+          {successMessage}
+        </p>
+      )}
+      
+      {isEditing && (
+        <div className={styles.buttons}>
+          <Button 
+            htmlType="button" 
+            type="secondary" 
+            size="medium"
+            onClick={handleCancel}
+          >
+            Отмена
+          </Button>
+          <Button 
+            htmlType="submit" 
+            type="primary" 
+            size="medium"
+            disabled={loading}
+          >
+            {loading ? 'Сохранение...' : 'Сохранить'}
+          </Button>
+        </div>
+      )}
+    </form>
+  );
+};
+
+export const ProfilePage: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, isAuthenticated, loading } = useAppSelector(state => state.auth);
+  const [fetchAttempted, setFetchAttempted] = useState(false);
+  
+  // Determine if we're on the profile page or orders page
+  const isProfilePath = location.pathname === "/profile";
+  
+  // Fetch user data only if:
+  // 1. We are authenticated
+  // 2. We don't have user data
+  // 3. We haven't already attempted a fetch
+  // 4. We're not currently loading
+  useEffect(() => {
+    if (isAuthenticated && !user && !fetchAttempted && !loading) {
+      console.log('ProfilePage: Fetching user data once');
+      setFetchAttempted(true);
+      
+      dispatch(getUser())
+        .unwrap()
+        .then(data => {
+          console.log('User data loaded successfully ', data);
+        })
+        .catch(err => {
+          console.error('Error fetching user data:', err);
+        });
+    }
+  }, [dispatch, isAuthenticated, user, fetchAttempted, loading]);
+
   const handleLogout = () => {
     dispatch(logout())
       .then(() => {
@@ -163,77 +262,7 @@ export const ProfilePage: React.FC = () => {
       </div>
       
       <div className={styles.content}>
-        <Outlet />
-        
-        <form className={styles.form} onSubmit={handleSubmit}>
-          <div className={styles.inputContainer}>
-            <Input
-              type="text"
-              placeholder="Имя"
-              onChange={e => {
-                setName(e.target.value);
-                handleChange();
-              }}
-              value={name}
-              name="name"
-              icon="EditIcon"
-            />
-          </div>
-          
-          <div className={styles.inputContainer}>
-            <EmailInput
-              onChange={e => {
-                setEmail(e.target.value);
-                handleChange();
-              }}
-              value={email}
-              name="email"
-              placeholder="E-mail"
-              isIcon={true}
-            />
-          </div>
-          
-          <div className={styles.inputContainer}>
-            <Input
-              type="password"
-              placeholder="Пароль"
-              onChange={e => {
-                setPassword(e.target.value);
-                handleChange();
-              }}
-              value={password}
-              name="password"
-              icon="EditIcon"
-            />
-          </div>
-          
-          {successMessage && (
-            <p className={`text text_type_main-default text_color_success ${styles.successMessage}`}>
-              {successMessage}
-            </p>
-          )}
-          
-          {isEditing && (
-            <div className={styles.buttons}>
-              <Button 
-                htmlType="button" 
-                type="secondary" 
-                size="medium"
-                onClick={handleCancel}
-              >
-                Отмена
-              </Button>
-              <Button 
-                htmlType="submit" 
-                type="primary" 
-                size="medium"
-                disabled={loading}
-              >
-                {loading ? 'Сохранение...' : 'Сохранить'}
-              </Button>
-            </div>
-          )}
-        </form>
+        {isProfilePath ? <ProfileForm /> : <Outlet />}
       </div>
     </div>
   );
